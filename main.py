@@ -6,15 +6,15 @@ from math import log
 adc = ADC(Pin(34))  # GPIO34 / ADC1_6
 
 # ESP32 ADC setup
-adc.width(ADC.WIDTH_12BIT)      # values from 0 to 4095
-adc.atten(ADC.ATTN_11DB)        # allows reading up to about 3.3V
+adc.width(ADC.WIDTH_12BIT)  # values from 0 to 4095
+adc.atten(ADC.ATTN_11DB)  # allows reading up to about 3.3V
 
 # Thermistor settings
 VCC = 3.3
-R_FIXED = 10000      # 10k fixed resistor
-R0 = 10000           # thermistor resistance at 25C
-T0 = 25 + 273.15     # 25C in Kelvin
-BETA = 3950          # common value for 10k NTC thermistors
+R_FIXED = 10000  # 10k fixed resistor
+R0 = 10000  # thermistor resistance at 25C
+T0 = 25 + 273.15  # 25C in Kelvin
+BETA = 3950  # common value for 10k NTC thermistors
 
 
 def read_adc_average(samples=20):
@@ -50,9 +50,12 @@ while True:
         print("ADC reading out of range. Check wiring.")
     else:
         temp_c, raw, voltage, resistance = result
-        print("ADC:", int(raw),
-              "Voltage: {:.3f} V".format(voltage),
-              "Resistance: {:.0f} ohm".format(resistance),
-              "Temperature: {:.2f} C".format(temp_c))
+        print(
+            "ADC:",
+            int(raw),
+            "Voltage: {:.3f} V".format(voltage),
+            "Resistance: {:.0f} ohm".format(resistance),
+            "Temperature: {:.2f} C".format(temp_c),
+        )
 
     sleep(1)
