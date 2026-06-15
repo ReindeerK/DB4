@@ -6,7 +6,7 @@ from temperature import read_temperature
 from light_sensor import init_sensor, read_sensor
 from rgb_led import set_blue_brightness
 
-BROKER_IP = "192.168.1.105"  # your laptop IP
+BROKER_IP = "172.20.10.4"  # your laptop IP
 pump = Pump(pin=33, use_pwm=False)
 client = MQTTClient("esp32_db4", BROKER_IP)
 
@@ -42,7 +42,7 @@ def on_command(topic, msg):
 # Connect WiFi
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
-wlan.connect("YourSSID", "YourPassword")
+wlan.connect("andrejs_iphone", "2number9")
 while not wlan.isconnected():
     time.sleep(0.1)
 
