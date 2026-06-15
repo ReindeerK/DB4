@@ -12,7 +12,7 @@ class Pump:
     - L9110S GND -> 12V GND and ESP32 GND (common ground)
     """
 
-    def __init__(self, pin=33, use_pwm=False, freq=1000):
+    def __init__(self, pin=32, use_pwm=False, freq=1000):
         """
         Initialize pump controller on given pin.
 
@@ -27,7 +27,7 @@ class Pump:
         if use_pwm:
             self.pwm = PWM(Pin(pin), freq=freq)
         else:
-            self.digital = Pin(pin, Pin.OUT)
+            self.digital = Pin(pin, Pin.OUT, value=0)
 
     def on(self):
         """Turn pump on at full speed."""
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     import time
 
     # Simple on/off test (no PWM)
-    pump = Pump(pin=33, use_pwm=False)
+    pump = Pump(pin=32, use_pwm=False)
 
     try:
         print("Testing pump on/off...")

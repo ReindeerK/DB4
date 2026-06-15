@@ -13,12 +13,10 @@ def set_blue_brightness(brightness):
     # PWM duty cycle is 0-1023 for ESP32
     duty = int((brightness / 255) * 1023)
     blue_led.duty(duty)
-    print(f"Blue brightness: {brightness}")
 
 
 def pulse_blue(pulses=2):
     """Pulse the blue LED"""
-    print(f"Pulsing blue LED {pulses} times...")
     try:
         for pulse_count in range(pulses):
             # Fade in
@@ -31,7 +29,6 @@ def pulse_blue(pulses=2):
                 set_blue_brightness(brightness)
                 time.sleep(0.05)
 
-            print(f"Pulse {pulse_count + 1} complete")
 
         set_blue_brightness(0)
         print("All pulses complete")

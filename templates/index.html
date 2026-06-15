@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DB4 Bioreactor Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>DB4 Bioreactor Dashboard</h1>
+
+    <div class="readings">
+        <div class="card">
+            <div class="label">Temperature</div>
+            <div class="value" id="temperature">--</div>
+            <div class="unit">&deg;C</div>
+        </div>
+        <div class="card">
+            <div class="label">OD</div>
+            <div class="value" id="od">--</div>
+        </div>
+        <div class="card">
+            <div class="label">Pump 1</div>
+            <div class="value" id="pump1-state">--</div>
+        </div>
+        <div class="card">
+            <div class="label">Pump 2</div>
+            <div class="value" id="pump2-state">--</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="setPump(1, 'on')">Pump 1 ON</button>
+        <button onclick="setPump(1, 'off')">Pump 1 OFF</button>
+    </div>
+    <div class="controls">
+        <button onclick="setPump(2, 'on')">Pump 2 ON</button>
+        <button onclick="setPump(2, 'off')">Pump 2 OFF</button>
+    </div>
+
+    <script>
+        async function refresh() {
+            const res = await fetch('/status');
+            const data = await res.json();
+            document.getElementById('temperature').textContent = data.temperature ?? '--';
+            document.getElementById('od').textContent = data.od ?? '--';
+            document.getElementById('pump1-state').textContent = data.pump1_state ?? '--';
+            document.getElementById('pump2-state').textContent = data.pump2_state ?? '--';
+        }
+
+        async function setPump(id, cmd) {
+            await fetch(`/pump/${id}/${cmd}`, { method: 'POST' });
+        }
+
+        refresh();
+        setInterval(refresh, 1000);
+    </script>
+</body>
+</html>

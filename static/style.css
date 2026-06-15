@@ -1,0 +1,61 @@
+body {
+    font-family: sans-serif;
+    background: #f4f4f4;
+    text-align: center;
+    padding: 2rem;
+}
+
+h1 {
+    color: #333;
+}
+
+.readings {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    min-width: 120px;
+}
+
+.label {
+    font-size: 0.9rem;
+    color: #888;
+    text-transform: uppercase;
+}
+
+.value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #222;
+}
+
+.unit {
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.controls button {
+    font-size: 1rem;
+    padding: 0.6rem 1.5rem;
+    margin: 0 0.5rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #4caf50;
+    color: white;
+}
+
+.controls button:last-child {
+    background: #f44336;
+}
+
+.controls button:hover {
+    opacity: 0.85;
+}
