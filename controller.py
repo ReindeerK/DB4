@@ -66,9 +66,9 @@ client.subscribe(b"db4/control/#")
 while True:
     client.check_msg()           # non-blocking: handle incoming commands
     temp = measure_temp()
-    od   = measure_od()
+    # od   = measure_od()        # Disabled to stop the 2-second LED cycle
     client.publish(b"db4/temperature", str(temp))
-    client.publish(b"db4/od",          str(od))
+    # client.publish(b"db4/od",          str(od))
     client.publish(b"db4/pump1/state", "on" if pump1.digital.value() else "off")
     client.publish(b"db4/pump2/state", "on" if pump2.digital.value() else "off")
     time.sleep(2)

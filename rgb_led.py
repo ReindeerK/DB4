@@ -6,6 +6,7 @@ BLUE_PIN = 25  # GPIO pin for blue LED
 
 # Create PWM object for blue channel
 blue_led = PWM(Pin(BLUE_PIN), freq=1000)
+blue_led.duty(0)  # Make sure the LED defaults to off on boot!
 
 
 def set_blue_brightness(brightness):

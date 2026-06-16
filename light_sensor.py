@@ -19,8 +19,9 @@ DATA_CH0_1 = 0x8B
 
 def init_sensor():
     """Initialize the LTR-329 sensor"""
-    # Set ALS control register (enable sensor, gain=1, integration time)
-    i2c.writeto_mem(LTR329_ADDR, ALS_CONTR, b"\x01")
+    # Set ALS control register (enable sensor, gain=96x for high sensitivity, integration time)
+    # 0x1D = b"\x1D" = Active mode, Gain 96X
+    i2c.writeto_mem(LTR329_ADDR, ALS_CONTR, b"\x1D")
     time.sleep(0.01)
 
     # Set measurement rate (100ms integration time, 500ms repeat rate)
