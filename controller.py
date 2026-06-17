@@ -12,7 +12,8 @@ LED_ON_BRIGHTNESS = 255
 pump1 = Pump(pin=32, use_pwm=False)
 pump2 = Pump(pin=33, use_pwm=False)
 client = MQTTClient("esp32_db4", BROKER_IP)
-led_on = False
+led_on = True
+set_blue_brightness(LED_ON_BRIGHTNESS)  # LED defaults to on at boot
 
 
 def measure_temp():
