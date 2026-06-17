@@ -1,21 +1,20 @@
 # controller.py on the ESP32
 import time, network
 from umqtt.robust import MQTTClient
+from controller_config import (
+    MQTT_HOST,
+    MQTT_PASSWORD,
+    MQTT_PORT,
+    MQTT_SSL_PARAMS,
+    MQTT_TLS,
+    MQTT_USER,
+    WIFI_PASSWORD,
+    WIFI_SSID,
+)
 from pump import Pump
 from temperature import read_temperature
 from light_sensor import init_sensor, read_sensor
 from rgb_led import set_blue_brightness
-
-WIFI_SSID = "andrejs_iphone"
-WIFI_PASSWORD = "2number9"
-
-# Cloud MQTT broker settings. Use port 8883 with TLS for HiveMQ Cloud,
-# EMQX Cloud, and most hosted MQTT providers.
-MQTT_HOST = "your-mqtt-broker-host"
-MQTT_PORT = 8883
-MQTT_USER = b"your-mqtt-username"
-MQTT_PASSWORD = b"your-mqtt-password"
-MQTT_TLS = True
 
 LED_ON_BRIGHTNESS = 255
 
@@ -28,6 +27,7 @@ client = MQTTClient(
     user=MQTT_USER,
     password=MQTT_PASSWORD,
     ssl=MQTT_TLS,
+    ssl_params=MQTT_SSL_PARAMS,
 )
 led_on = True
 set_blue_brightness(LED_ON_BRIGHTNESS)  # LED defaults to on at boot
