@@ -7,7 +7,7 @@ from light_sensor import init_sensor, read_sensor
 from rgb_led import set_blue_brightness
 
 BROKER_IP = "172.20.10.4"  # your laptop IP
-LED_ON_BRIGHTNESS = 128
+LED_ON_BRIGHTNESS = 255
 
 pump1 = Pump(pin=32, use_pwm=False)
 pump2 = Pump(pin=33, use_pwm=False)

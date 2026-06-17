@@ -18,8 +18,8 @@ from light_sensor import init_sensor, read_sensor
 
 LED_PINS = {
     "blue": 25,
-    "red": 26,
-    "green": 27,
+    "green": 26,
+    "red": 27,
 }
 
 INTENSITIES = (64, 128, 192, 255)

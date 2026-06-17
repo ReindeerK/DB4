@@ -5,8 +5,8 @@ import time
 BLUE_PIN = 25  # GPIO pin for blue LED
 
 # Create PWM object for blue channel
-blue_led = PWM(Pin(BLUE_PIN), freq=1000)
-blue_led.duty(0)  # off at boot
+blue_led = PWM(Pin(BLUE_PIN), freq=100)
+blue_led.duty(255)  # off at boot
 
 
 def set_blue_brightness(brightness):
@@ -15,43 +15,19 @@ def set_blue_brightness(brightness):
     blue_led.duty(duty)
 
 
-def pulse_blue(pulses=2):
-    """Pulse the blue LED"""
-    try:
-        for pulse_count in range(pulses):
-            # Fade in
-            for brightness in range(0, 256, 10):
-                set_blue_brightness(brightness)
-                time.sleep(0.05)
-
-            # Fade out
-            for brightness in range(255, -1, -10):
-                set_blue_brightness(brightness)
-                time.sleep(0.05)
-
-
-        set_blue_brightness(0)
-        print("All pulses complete")
-    except KeyboardInterrupt:
-        set_blue_brightness(0)
-        print("Stopped")
-
 
 def main():
     """Main loop"""
-    print("HW-479 Blue LED Control")
-    print("-" * 40)
+    # print("HW-479 Blue LED Control")
+    # print("-" * 40)
 
     # Test: Set to full brightness
     set_blue_brightness(255)
-    time.sleep(2)
+    # time.sleep(2)
 
-    # Test: Set to half brightness
-    set_blue_brightness(127)
-    time.sleep(2)
-
-    # Pulse effect
-    pulse_blue()
+    # # Test: Set to half brightness
+    # set_blue_brightness(127)
+    # time.sleep(2)
 
 
 if __name__ == "__main__":
