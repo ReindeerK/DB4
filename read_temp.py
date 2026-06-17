@@ -1,5 +1,6 @@
-from machine import ADC, Pin, DAC
-from time import sleep
+from machine import Pin
+from machine import ADC
+from machine import DAC
 from math import log
 
 import machine
@@ -13,7 +14,6 @@ NUM_SAMPLES = 25
 THERM_B_COEFF = 3950
 ADC_MAX = 1023
 ADC_Vmax = 3.15
-TEMP_OFFSET_C = -1.5  # subtract measured constant offset
 
 def init_temp_sensor(TENP_SENS_ADC_PIN_NO = 35):
     adc = ADC(Pin(TENP_SENS_ADC_PIN_NO))
@@ -21,7 +21,7 @@ def init_temp_sensor(TENP_SENS_ADC_PIN_NO = 35):
     adc.width(ADC.WIDTH_10BIT)
     return adc
 
-def read_temperature():
+def read_temp(temp_sens):
     raw_read = []
     # Collect NUM_SAMPLES
     for i in range(1, NUM_SAMPLES+1):
@@ -30,9 +30,6 @@ def read_temperature():
     # Average of the NUM_SAMPLES and look it up in the table
     raw_average = sum(raw_read)/NUM_SAMPLES
     print('raw_avg = ' + str(raw_average))
-
-    if raw_average <= 0 or raw_average >= ADC_MAX:
-        return None
     print('V_measured = ' + str(adc_V_lookup[round(raw_average)]))
 
     # Convert to resistance
@@ -44,21 +41,18 @@ def read_temperature():
     steinhart  = log(resistance / NOM_RES) / THERM_B_COEFF
     steinhart += 1.0 / (TEMP_NOM + 273.15)
     steinhart  = (1.0 / steinhart) - 273.15
-    return steinhart + TEMP_OFFSET_C
+    return steinhart
+
+print("I'm alive!\n")
+utime.sleep_ms(2000)
 
 temp_sens = init_temp_sensor()
 
 sample_last_ms = 0
 SAMPLE_INTERVAL = 1000
 
-def main():
-    global sample_last_ms
-    while (True):
-        if utime.ticks_diff(utime.ticks_ms(), sample_last_ms) >= SAMPLE_INTERVAL:
-            temp = read_temperature()
-            print('Thermistor temperature: ' + str(temp))
-            sample_last_ms = utime.ticks_ms()
-
-
-if __name__ == "__main__":
-    main()
+while (True):
+    if utime.ticks_diff(utime.ticks_ms(), sample_last_ms) >= SAMPLE_INTERVAL:
+        temp = read_temp(temp_sens)
+        print('Thermistor temperature: ' + str(temp))
+        sample_last_ms = utime.ticks_ms()

@@ -18,8 +18,7 @@ set_blue_brightness(LED_ON_BRIGHTNESS)  # LED defaults to on at boot
 
 def measure_temp():
     """Read temperature in Celsius from the thermistor, or None if out of range."""
-    result = read_temperature()
-    return None if result is None else result[0]
+    return read_temperature()
 
 
 def measure_od():

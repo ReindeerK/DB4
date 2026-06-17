@@ -60,8 +60,8 @@
     </div>
 
     <script>
-        const TEMP_MIN = 0, TEMP_MAX = 60;
-        const OD_GAUGE_MAX = 2000; // tune to the light sensor's typical raw-count range
+        const TEMP_MIN = 15, TEMP_MAX = 30;
+        const OD_GAUGE_MAX = 65000; // tune to the light sensor's typical raw-count range
 
         function setPanelState(prefix, state) {
             document.getElementById(`${prefix}-state`).textContent = state ?? '--';
