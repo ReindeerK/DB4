@@ -31,7 +31,7 @@ leds = {}
 for color, pin in LED_PINS.items():
     if pin is not None:
         leds[color] = PWM(Pin(pin), freq=1000)
-        leds[color].duty(0)
+        leds[color].duty(0)  # off at boot
 
 
 def set_led(color, brightness):

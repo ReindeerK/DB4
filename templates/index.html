@@ -26,6 +26,10 @@
             <div class="label">Pump 2</div>
             <div class="value" id="pump2-state">--</div>
         </div>
+        <div class="card">
+            <div class="label">LED</div>
+            <div class="value" id="led-state">--</div>
+        </div>
     </div>
 
     <div class="controls">
@@ -36,6 +40,10 @@
         <button onclick="setPump(2, 'on')">Pump 2 ON</button>
         <button onclick="setPump(2, 'off')">Pump 2 OFF</button>
     </div>
+    <div class="controls">
+        <button onclick="setLed('on')">LED ON</button>
+        <button onclick="setLed('off')">LED OFF</button>
+    </div>
 
     <script>
         async function refresh() {
@@ -45,10 +53,15 @@
             document.getElementById('od').textContent = data.od ?? '--';
             document.getElementById('pump1-state').textContent = data.pump1_state ?? '--';
             document.getElementById('pump2-state').textContent = data.pump2_state ?? '--';
+            document.getElementById('led-state').textContent = data.led_state ?? '--';
         }
 
         async function setPump(id, cmd) {
             await fetch(`/pump/${id}/${cmd}`, { method: 'POST' });
+        }
+
+        async function setLed(cmd) {
+            await fetch(`/led/${cmd}`, { method: 'POST' });
         }
 
         refresh();

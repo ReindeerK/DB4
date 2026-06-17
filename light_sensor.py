@@ -1,8 +1,9 @@
 from machine import I2C, Pin
 import time
 
-# Initialize I2C on GPIO 21 (SDA) and GPIO 22 (SCL)
-i2c = I2C(1, scl=Pin(22), sda=Pin(21), freq=400000)
+# I2C is initialised at module load time (before WiFi starts in controller.py).
+# Lower frequency (100 kHz) gives wider timing margins when the WiFi radio is active.
+i2c = I2C(1, scl=Pin(22), sda=Pin(21), freq=100000)
 
 # LTR-329 I2C address
 LTR329_ADDR = 0x29
@@ -18,16 +19,11 @@ DATA_CH0_1 = 0x8B
 
 
 def init_sensor():
-    """Initialize the LTR-329 sensor"""
-    # Set ALS control register (enable sensor, gain=96x for high sensitivity, integration time)
-    # 0x1D = b"\x1D" = Active mode, Gain 96X
-    i2c.writeto_mem(LTR329_ADDR, ALS_CONTR, b"\x1D")
-    time.sleep(0.01)
-
-    # Set measurement rate (100ms integration time, 500ms repeat rate)
-    i2c.writeto_mem(LTR329_ADDR, ALS_MEAS_RATE, b"\x03")
-    time.sleep(0.01)
-
+    """Initialize the LTR-329 sensor."""
+    i2c.writeto_mem(LTR329_ADDR, ALS_CONTR, b"\x1D")   # Active mode, Gain 96×
+    time.sleep(0.05)
+    i2c.writeto_mem(LTR329_ADDR, ALS_MEAS_RATE, b"\x03")  # 100 ms integration, 500 ms rate
+    time.sleep(0.65)   # wait for first complete measurement cycle
     print("LTR-329 initialized")
 
 

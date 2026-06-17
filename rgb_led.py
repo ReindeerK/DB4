@@ -6,12 +6,11 @@ BLUE_PIN = 25  # GPIO pin for blue LED
 
 # Create PWM object for blue channel
 blue_led = PWM(Pin(BLUE_PIN), freq=1000)
-blue_led.duty(0)  # Make sure the LED defaults to off on boot!
+blue_led.duty(0)  # off at boot
 
 
 def set_blue_brightness(brightness):
-    """Set blue LED brightness (0-255)"""
-    # PWM duty cycle is 0-1023 for ESP32
+    """Set blue LED brightness (0=off, 255=full on)."""
     duty = int((brightness / 255) * 1023)
     blue_led.duty(duty)
 

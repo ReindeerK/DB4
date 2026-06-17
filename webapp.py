@@ -16,6 +16,7 @@ state = {
     "od": None,
     "pump1_state": None,
     "pump2_state": None,
+    "led_state": None,
 }
 
 
@@ -24,6 +25,7 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("db4/od")
     client.subscribe("db4/pump1/state")
     client.subscribe("db4/pump2/state")
+    client.subscribe("db4/led/state")
 
 
 def on_message(client, userdata, msg):
@@ -37,6 +39,8 @@ def on_message(client, userdata, msg):
             state["pump1_state"] = payload
         elif msg.topic == "db4/pump2/state":
             state["pump2_state"] = payload
+        elif msg.topic == "db4/led/state":
+            state["led_state"] = payload
 
 
 mqtt_client = mqtt.Client()
@@ -62,6 +66,14 @@ def pump(pump_id, cmd):
     if pump_id not in (1, 2) or cmd not in ("on", "off"):
         return jsonify({"error": "invalid command"}), 400
     mqtt_client.publish(f"db4/pump{pump_id}/set", cmd)
+    return jsonify({"ok": True})
+
+
+@app.route("/led/<cmd>", methods=["POST"])
+def led(cmd):
+    if cmd not in ("on", "off"):
+        return jsonify({"error": "invalid command"}), 400
+    mqtt_client.publish("db4/led/set", cmd)
     return jsonify({"ok": True})
 
 
