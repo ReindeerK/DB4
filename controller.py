@@ -6,7 +6,7 @@ from temperature import read_temperature
 from light_sensor import init_sensor, read_sensor
 from rgb_led import set_blue_brightness
 
-BROKER_IP = "172.20.10.4"  # your laptop IP
+BROKER_IP = "172.20.10.10"  # your laptop IP
 LED_ON_BRIGHTNESS = 255
 
 pump1 = Pump(pin=32, use_pwm=False)
@@ -60,7 +60,7 @@ wlan = network.WLAN(network.STA_IF)
 if not wlan.active():
     wlan.active(True)
 if not wlan.isconnected():
-    wlan.connect("andrejs_iphone", "2number9")
+    wlan.connect("Nicoleta", "kiwi1111")
     while not wlan.isconnected():
         time.sleep(0.1)
 

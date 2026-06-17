@@ -1,61 +1,191 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+    --bg: #06090c;
+    --panel-bg: #0d1419;
+    --border: #1c2c32;
+    --teal: #2dd9c8;
+    --teal-glow: rgba(45, 217, 200, 0.35);
+    --amber: #f5a623;
+    --text-dim: #5d7077;
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
-    font-family: sans-serif;
-    background: #f4f4f4;
+    font-family: 'Share Tech Mono', monospace;
+    background: radial-gradient(circle at 50% 0%, #0d1a1e 0%, var(--bg) 65%);
+    color: var(--teal);
     text-align: center;
-    padding: 2rem;
+    padding: 2.5rem 1.5rem;
+    margin: 0;
+    min-height: 100vh;
 }
 
 h1 {
-    color: #333;
-}
-
-.readings {
-    display: flex;
-    justify-content: center;
-    gap: 1.5rem;
-    margin: 2rem 0;
-}
-
-.card {
-    background: white;
-    border-radius: 8px;
-    padding: 1.5rem 2rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    min-width: 120px;
-}
-
-.label {
-    font-size: 0.9rem;
-    color: #888;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 1.4rem;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
+    color: var(--teal);
+    text-shadow: 0 0 12px var(--teal-glow);
+    margin: 0 0 2rem;
+}
+
+.readings,
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.25rem;
+    max-width: 900px;
+    margin: 0 auto 1.5rem;
+}
+
+.panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    min-width: 150px;
+    text-align: left;
+    overflow: hidden;
+}
+
+.panel-header {
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+    padding: 0.5rem 0.75rem;
+}
+
+.panel-header .bullet {
+    color: var(--teal);
+    margin-right: 0.4rem;
+}
+
+.panel-body {
+    padding: 1rem 0.75rem 1.25rem;
+    text-align: center;
 }
 
 .value {
-    font-size: 2rem;
+    font-size: 1.8rem;
     font-weight: bold;
-    color: #222;
+    color: var(--teal);
+    text-shadow: 0 0 8px var(--teal-glow);
 }
 
 .unit {
-    font-size: 0.8rem;
-    color: #888;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 0.25rem;
+    text-transform: uppercase;
 }
 
-.controls button {
-    font-size: 1rem;
-    padding: 0.6rem 1.5rem;
-    margin: 0 0.5rem;
-    border: none;
-    border-radius: 6px;
+.panel.toggle {
     cursor: pointer;
-    background: #4caf50;
-    color: white;
+    transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.controls button:last-child {
-    background: #f44336;
+.panel.toggle:hover {
+    border-color: var(--teal);
+    box-shadow: 0 0 14px var(--teal-glow);
 }
 
-.controls button:hover {
-    opacity: 0.85;
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin: 0 auto 0.6rem;
+    background: var(--text-dim);
+}
+
+.panel.toggle.is-on .status-dot {
+    background: var(--teal);
+    box-shadow: 0 0 10px var(--teal);
+}
+
+.panel.toggle.is-off .value {
+    color: var(--text-dim);
+    text-shadow: none;
+}
+
+.panel.toggle.is-off .status-dot {
+    background: var(--amber);
+    box-shadow: 0 0 6px var(--amber);
+}
+
+.temp-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.thermo {
+    display: flex;
+    align-items: stretch;
+    gap: 0.4rem;
+    height: 110px;
+    margin-bottom: 0.75rem;
+}
+
+.thermo-scale {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+}
+
+.thermo-track {
+    width: 16px;
+    height: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #060a0d;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+}
+
+.thermo-fill {
+    width: 100%;
+    height: 0%;
+    background: linear-gradient(to top, var(--teal), var(--amber));
+    box-shadow: 0 0 10px var(--teal-glow);
+    transition: height 0.4s ease;
+}
+
+.gauge-circle {
+    --pct: 0%;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    margin: 0 auto;
+    background: conic-gradient(var(--teal) var(--pct), var(--border) 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.4s ease;
+    box-shadow: 0 0 10px var(--teal-glow);
+}
+
+.gauge-circle-inner {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: var(--panel-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.gauge-circle-inner .value {
+    font-size: 1.3rem;
 }

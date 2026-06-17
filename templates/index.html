@@ -6,62 +6,111 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>DB4 Bioreactor Dashboard</h1>
+    <h1>DB4 Bioreactor &mdash; Control Window</h1>
 
     <div class="readings">
-        <div class="card">
-            <div class="label">Temperature</div>
-            <div class="value" id="temperature">--</div>
-            <div class="unit">&deg;C</div>
+        <div class="panel readout">
+            <div class="panel-header"><span class="bullet">&#9632;</span>Temperature</div>
+            <div class="panel-body temp-body">
+                <div class="thermo">
+                    <div class="thermo-scale"><span>60</span><span>30</span><span>0</span></div>
+                    <div class="thermo-track">
+                        <div class="thermo-fill" id="temp-fill"></div>
+                    </div>
+                </div>
+                <div class="value" id="temperature">--</div>
+                <div class="unit">&deg;C</div>
+            </div>
         </div>
-        <div class="card">
-            <div class="label">OD</div>
-            <div class="value" id="od">--</div>
-        </div>
-        <div class="card">
-            <div class="label">Pump 1</div>
-            <div class="value" id="pump1-state">--</div>
-        </div>
-        <div class="card">
-            <div class="label">Pump 2</div>
-            <div class="value" id="pump2-state">--</div>
-        </div>
-        <div class="card">
-            <div class="label">LED</div>
-            <div class="value" id="led-state">--</div>
+        <div class="panel readout">
+            <div class="panel-header"><span class="bullet">&#9632;</span>OD</div>
+            <div class="panel-body">
+                <div class="gauge-circle" id="od-gauge">
+                    <div class="gauge-circle-inner">
+                        <div class="value" id="od">--</div>
+                        <div class="unit">raw</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="controls">
-        <button onclick="setPump(1, 'on')">Pump 1 ON</button>
-        <button onclick="setPump(1, 'off')">Pump 1 OFF</button>
-    </div>
-    <div class="controls">
-        <button onclick="setPump(2, 'on')">Pump 2 ON</button>
-        <button onclick="setPump(2, 'off')">Pump 2 OFF</button>
-    </div>
-    <div class="controls">
-        <button onclick="setLed('on')">LED ON</button>
-        <button onclick="setLed('off')">LED OFF</button>
+        <div class="panel toggle" id="pump1-panel" onclick="togglePump(1)">
+            <div class="panel-header"><span class="bullet">&#9632;</span>Pump 1</div>
+            <div class="panel-body">
+                <div class="status-dot" id="pump1-dot"></div>
+                <div class="value" id="pump1-state">--</div>
+            </div>
+        </div>
+        <div class="panel toggle" id="pump2-panel" onclick="togglePump(2)">
+            <div class="panel-header"><span class="bullet">&#9632;</span>Pump 2</div>
+            <div class="panel-body">
+                <div class="status-dot" id="pump2-dot"></div>
+                <div class="value" id="pump2-state">--</div>
+            </div>
+        </div>
+        <div class="panel toggle" id="led-panel" onclick="toggleLed()">
+            <div class="panel-header"><span class="bullet">&#9632;</span>LED</div>
+            <div class="panel-body">
+                <div class="status-dot" id="led-dot"></div>
+                <div class="value" id="led-state">--</div>
+            </div>
+        </div>
     </div>
 
     <script>
+        const TEMP_MIN = 0, TEMP_MAX = 60;
+        const OD_GAUGE_MAX = 2000; // tune to the light sensor's typical raw-count range
+
+        function setPanelState(prefix, state) {
+            document.getElementById(`${prefix}-state`).textContent = state ?? '--';
+            const panel = document.getElementById(`${prefix}-panel`);
+            panel.classList.toggle('is-on', state === 'on');
+            panel.classList.toggle('is-off', state === 'off');
+        }
+
+        function setTemperature(raw) {
+            const tempC = parseFloat(raw);
+            const display = Number.isFinite(tempC) ? tempC.toFixed(2) : '--';
+            document.getElementById('temperature').textContent = display;
+
+            const pct = Number.isFinite(tempC)
+                ? Math.max(0, Math.min(100, ((tempC - TEMP_MIN) / (TEMP_MAX - TEMP_MIN)) * 100))
+                : 0;
+            document.getElementById('temp-fill').style.height = `${pct}%`;
+        }
+
+        function setOd(raw) {
+            const od = parseFloat(raw);
+            document.getElementById('od').textContent = Number.isFinite(od) ? od : '--';
+
+            const pct = Number.isFinite(od) ? Math.max(0, Math.min(100, (od / OD_GAUGE_MAX) * 100)) : 0;
+            document.getElementById('od-gauge').style.setProperty('--pct', `${pct}%`);
+        }
+
         async function refresh() {
             const res = await fetch('/status');
             const data = await res.json();
-            document.getElementById('temperature').textContent = data.temperature ?? '--';
-            document.getElementById('od').textContent = data.od ?? '--';
-            document.getElementById('pump1-state').textContent = data.pump1_state ?? '--';
-            document.getElementById('pump2-state').textContent = data.pump2_state ?? '--';
-            document.getElementById('led-state').textContent = data.led_state ?? '--';
+            setTemperature(data.temperature);
+            setOd(data.od);
+            setPanelState('pump1', data.pump1_state);
+            setPanelState('pump2', data.pump2_state);
+            setPanelState('led', data.led_state);
         }
 
-        async function setPump(id, cmd) {
-            await fetch(`/pump/${id}/${cmd}`, { method: 'POST' });
+        async function togglePump(id) {
+            const current = document.getElementById(`pump${id}-state`).textContent;
+            const next = current === 'on' ? 'off' : 'on';
+            await fetch(`/pump/${id}/${next}`, { method: 'POST' });
+            refresh();
         }
 
-        async function setLed(cmd) {
-            await fetch(`/led/${cmd}`, { method: 'POST' });
+        async function toggleLed() {
+            const current = document.getElementById('led-state').textContent;
+            const next = current === 'on' ? 'off' : 'on';
+            await fetch(`/led/${next}`, { method: 'POST' });
+            refresh();
         }
 
         refresh();

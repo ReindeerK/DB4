@@ -5,7 +5,7 @@ import time
 BLUE_PIN = 25  # GPIO pin for blue LED
 
 # Create PWM object for blue channel
-blue_led = PWM(Pin(BLUE_PIN), freq=1000)
+blue_led = PWM(Pin(BLUE_PIN), freq=100)
 blue_led.duty(1023)  # on at boot
 
 
