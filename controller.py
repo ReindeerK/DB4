@@ -6,12 +6,29 @@ from temperature import read_temperature
 from light_sensor import init_sensor, read_sensor
 from rgb_led import set_blue_brightness
 
-BROKER_IP = "172.20.10.4"  # your laptop IP
+WIFI_SSID = "andrejs_iphone"
+WIFI_PASSWORD = "2number9"
+
+# Cloud MQTT broker settings. Use port 8883 with TLS for HiveMQ Cloud,
+# EMQX Cloud, and most hosted MQTT providers.
+MQTT_HOST = "your-mqtt-broker-host"
+MQTT_PORT = 8883
+MQTT_USER = b"your-mqtt-username"
+MQTT_PASSWORD = b"your-mqtt-password"
+MQTT_TLS = True
+
 LED_ON_BRIGHTNESS = 255
 
 pump1 = Pump(pin=32, use_pwm=False)
 pump2 = Pump(pin=33, use_pwm=False)
-client = MQTTClient("esp32_db4", BROKER_IP)
+client = MQTTClient(
+    b"esp32_db4",
+    MQTT_HOST,
+    port=MQTT_PORT,
+    user=MQTT_USER,
+    password=MQTT_PASSWORD,
+    ssl=MQTT_TLS,
+)
 led_on = True
 set_blue_brightness(LED_ON_BRIGHTNESS)  # LED defaults to on at boot
 
@@ -59,7 +76,7 @@ wlan = network.WLAN(network.STA_IF)
 if not wlan.active():
     wlan.active(True)
 if not wlan.isconnected():
-    wlan.connect("andrejs_iphone", "2number9")
+    wlan.connect(WIFI_SSID, WIFI_PASSWORD)
     while not wlan.isconnected():
         time.sleep(0.1)
 
