@@ -6,7 +6,7 @@ import ssl
 
 import paho.mqtt.client as mqtt
 
-LOG_FILE = "db4_log.csv"
+LOG_FILE = os.environ.get("LOG_FILE", "bioreactordb4_log.csv")
 BROKER_HOST = os.environ.get("MQTT_HOST", "localhost")
 BROKER_PORT = int(os.environ.get("MQTT_PORT", "1883"))
 BROKER_USER = os.environ.get("MQTT_USERNAME")
@@ -22,7 +22,7 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg):
     row = [datetime.datetime.now().isoformat(), msg.topic, msg.payload.decode()]
     print(row)
-    with open(log_path, "a", newline="") as f:
+    with open(LOG_FILE, "a", newline="") as f:
         csv.writer(f).writerow(row)
 
 

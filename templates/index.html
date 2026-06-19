@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DB4 Bioreactor R-07</title>
+  <title>{{ app_name }}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -17,7 +17,7 @@
         <div style="width:14px; height:14px; background:var(--accent); box-shadow:0 0 12px var(--accent); animation:flick 3s linear infinite;"></div>
       </div>
       <div>
-        <div style="font-weight:700; font-size:19px; letter-spacing:.04em; color:var(--text);">BIOREACTOR&nbsp;<span style="color:var(--accent);">R-07</span></div>
+        <div id="brand-name" style="font-weight:700; font-size:19px; letter-spacing:.04em; color:var(--text);">{{ app_name }}</div>
         <div id="organism" style="font-family:'JetBrains Mono',monospace; font-weight:500; font-size:11px; letter-spacing:.16em; color:var(--dim); margin-top:6px; text-transform:uppercase;">&mdash;</div>
       </div>
     </div>
@@ -203,12 +203,20 @@
           </div>
         </div>
       </div>
+      <div style="border-top:1px solid var(--line); padding:13px 15px 15px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; font-family:'JetBrains Mono',monospace; font-weight:600; font-size:10px; letter-spacing:.12em; color:var(--dim); text-transform:uppercase;">
+          <span><span style="color:var(--accent2);">LG&middot;12</span>&nbsp;&nbsp;MQTT Event Log</span>
+          <span id="log-count" style="color:var(--accent);">0 EVENTS</span>
+        </div>
+        <div id="event-log" style="margin-top:10px; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; min-height:54px;"></div>
+      </div>
     </section>
   </footer>
 </div>
 
 <script>
-  // ---- Display-only constants (no backend control loop yet — see IMPLEMENT.md) ----
+  const APP_NAME     = {{ app_name|tojson }};
+  // ---- Display constants and backend wiring ----
   const SETPOINT     = 17.5;        // target temp; no backend setpoint endpoint yet
   const TEMP_MIN     = 14, TEMP_MAX = 21;   // thermometer + temp graph domain (°C)
   const OPT_LO       = 17, OPT_HI   = 18;   // optimal band for STATUS derivation
@@ -216,6 +224,7 @@
   const CELL_MIN     = 0, CELL_MAX  = 4.5;  // algae-density graph/bar domain (×10⁸ cells/mL)
   const HIST_LEN     = 90;          // ~60s of history at the 700ms poll cadence
   const POLL_MS      = 1000;
+  const LOG_LIMIT    = 12;
   const ORGANISM     = 'Mytilus edulis ⇄ Chlorella';
 
   // Maps the design's two named pumps onto the backend's generic pump ids.
@@ -230,10 +239,14 @@
   // last seen real pump states, so an AUTO re-render can reflect actual hardware status
   const lastState = { pump1: 'off', pump2: 'off' };
   const startedAt = Date.now();
+  let serverUptime = null;
+  let serverUptimeSeenAt = Date.now();
 
   let tempHist = [];
   let cellHist = [];
 
+  document.title = APP_NAME;
+  $('brand-name').textContent = APP_NAME;
   document.getElementById('organism').textContent = ORGANISM;
   $('setpoint').textContent = SETPOINT.toFixed(1);
 
@@ -284,6 +297,77 @@
     drawGraph($('cell-canvas'), cellHist, CELL_MIN, CELL_MAX, accent, line);
   }
   window.addEventListener('resize', drawGraphs);
+
+  async function seedHistory() {
+    try {
+      const res = await fetch('/history?limit=' + HIST_LEN);
+      const data = await res.json();
+      tempHist = (data.temperature || []).map(p => Number(p.value)).filter(Number.isFinite);
+      cellHist = (data.cell || []).map(p => Number(p.value)).filter(Number.isFinite);
+      renderEventLog(data.events || []);
+      drawGraphs();
+    } catch (e) {
+      renderEventLog([]);
+    }
+  }
+
+  async function refreshEvents() {
+    try {
+      const res = await fetch('/events?limit=' + LOG_LIMIT);
+      const data = await res.json();
+      renderEventLog(data.events || []);
+    } catch (e) {
+      // Keep the last rendered events if the network flickers.
+    }
+  }
+
+  function eventLabel(topic) {
+    return String(topic || '').replace('db4/', '').replace('/state', '').replace('/set', '');
+  }
+
+  function eventTime(ts) {
+    const d = new Date(ts);
+    if (Number.isNaN(d.getTime())) return '--:--:--';
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  function renderEventLog(items) {
+    const box = $('event-log');
+    const count = $('log-count');
+    if (!box) return;
+    box.replaceChildren();
+    const rows = items.slice(0, LOG_LIMIT);
+    if (count) count.textContent = rows.length + (rows.length === 1 ? ' EVENT' : ' EVENTS');
+    if (!rows.length) {
+      const empty = document.createElement('div');
+      empty.textContent = 'Awaiting MQTT traffic';
+      empty.style.cssText = "grid-column:1/-1; border:1px solid var(--line); padding:10px 12px; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--dim); letter-spacing:.08em;";
+      box.appendChild(empty);
+      return;
+    }
+
+    rows.forEach(item => {
+      const row = document.createElement('div');
+      row.style.cssText = "min-width:0; border:1px solid var(--line); background:var(--inset); padding:9px 10px; font-family:'JetBrains Mono',monospace;";
+
+      const top = document.createElement('div');
+      top.style.cssText = "display:flex; justify-content:space-between; gap:8px; color:var(--dim); font-size:9px; letter-spacing:.08em;";
+      const topic = document.createElement('span');
+      topic.textContent = eventLabel(item.topic);
+      topic.style.cssText = "overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
+      const ts = document.createElement('span');
+      ts.textContent = eventTime(item.ts);
+      ts.style.cssText = "flex:none;";
+      top.append(topic, ts);
+
+      const value = document.createElement('div');
+      value.textContent = item.value ?? '--';
+      value.style.cssText = "margin-top:6px; color:var(--accent); font-size:12px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
+
+      row.append(top, value);
+      box.appendChild(row);
+    });
+  }
 
   // ---------- meters ----------
   function syncMeters(temp, od, cell) {
@@ -351,8 +435,15 @@
 
     const temp = parseFloat(data.temperature);
     const od = parseFloat(data.od);
-    // Algae density (cell count) has no backend source yet — see IMPLEMENT.md.
     const cell = data.cell != null ? parseFloat(data.cell) : NaN;
+    if (Number.isFinite(data.uptime_seconds)) {
+      serverUptime = data.uptime_seconds;
+      serverUptimeSeenAt = Date.now();
+    }
+    if (data.app_name) {
+      $('brand-name').textContent = data.app_name;
+      document.title = data.app_name;
+    }
 
     // temperature readout + status
     $('temp-value').textContent = Number.isFinite(temp) ? temp.toFixed(1) : '--';
@@ -374,7 +465,7 @@
     $('od-status').textContent = odStatus;
     $('od-status').style.color = !ledOn ? 'var(--warn)' : (data.pump1_state === 'on' ? 'var(--accent)' : 'var(--dim)');
 
-    // algae density readout (placeholder until backend provides it)
+    // algae density readout; backend derives a smooth proxy from OD unless db4/cell is published
     $('cell-value').textContent = Number.isFinite(cell) ? cell.toFixed(1) : '—';
     $('cell-graph-val').textContent = Number.isFinite(cell) ? cell.toFixed(1) : '—';
 
@@ -393,6 +484,7 @@
     renderPump('cool', data.pump2_state);
     syncMeters(temp, od, cell);
     drawGraphs();
+    refreshEvents();
   }
 
   function setLive(ok) {
@@ -403,9 +495,10 @@
     ind.style.color = ok ? 'var(--accent)' : 'var(--warn)';
   }
 
-  // uptime is measured from page load (no backend uptime field — see IMPLEMENT.md)
   function tickUptime() {
-    const s = Math.floor((Date.now() - startedAt) / 1000);
+    const s = serverUptime != null
+      ? serverUptime + Math.floor((Date.now() - serverUptimeSeenAt) / 1000)
+      : Math.floor((Date.now() - startedAt) / 1000);
     const pad = x => String(x).padStart(2, '0');
     $('uptime').textContent = pad(Math.floor(s / 3600)) + ':' + pad(Math.floor((s % 3600) / 60)) + ':' + pad(s % 60);
   }
@@ -436,6 +529,7 @@
 
   tickUptime();
   setInterval(tickUptime, 1000);
+  seedHistory();
   refresh();
   setInterval(refresh, POLL_MS);
 </script>

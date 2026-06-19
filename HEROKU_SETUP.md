@@ -1,9 +1,9 @@
-# Hosting the DB4 dashboard on Heroku
+# Hosting BioreactorDB4 on Heroku
 
 The deployed architecture is:
 
 ```text
-Browser -> Heroku Flask dashboard -> hosted MQTT broker -> ESP32
+Browser -> Heroku Flask dashboard (BioreactorDB4) -> hosted MQTT broker -> ESP32
 ```
 
 Heroku should host the Flask dashboard only. Use a hosted MQTT broker such as
@@ -40,6 +40,7 @@ heroku config:set MQTT_PORT="8883"
 heroku config:set MQTT_USERNAME="your-mqtt-username"
 heroku config:set MQTT_PASSWORD="your-mqtt-password"
 heroku config:set MQTT_TLS="true"
+heroku config:set APP_NAME="BioreactorDB4"
 heroku config:set DASHBOARD_USERNAME="admin"
 heroku config:set DASHBOARD_PASSWORD="choose-a-strong-password"
 ```
@@ -48,7 +49,7 @@ Deploy:
 
 ```powershell
 git add .
-git commit -m "Deploy DB4 dashboard to Heroku"
+git commit -m "Deploy BioreactorDB4 dashboard to Heroku"
 git push heroku main
 heroku open
 ```
