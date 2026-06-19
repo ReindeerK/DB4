@@ -1,120 +1,443 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>DB4 Bioreactor Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DB4 Bioreactor R-07</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>DB4 Bioreactor &mdash; Control Window</h1>
+<div id="root" style="--bg:#0a0e0b;--panel:#0e1310;--panel2:#121a14;--inset:#080b09;--line:#1f2b22;--line2:#2a3a2e;--text:#d8f0de;--mid:#8fae97;--dim:#5e7766;--accent:#5cff9d;--accent2:#36e7d0;--warn:#ffcf4d;--glow:rgba(92,255,157,.5); min-height:100vh; background:var(--bg); color:var(--text); font-family:'Space Grotesk',sans-serif; display:flex; flex-direction:column; position:relative; background-image:radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--accent) 5%, transparent), transparent 45%);">
 
-    <div class="readings">
-        <div class="panel readout">
-            <div class="panel-header"><span class="bullet">&#9632;</span>Temperature</div>
-            <div class="panel-body temp-body">
-                <div class="thermo">
-                    <div class="thermo-scale"><span>60</span><span>30</span><span>0</span></div>
-                    <div class="thermo-track">
-                        <div class="thermo-fill" id="temp-fill"></div>
-                    </div>
-                </div>
-                <div class="value" id="temperature">--</div>
-                <div class="unit">&deg;C</div>
-            </div>
-        </div>
-        <div class="panel readout">
-            <div class="panel-header"><span class="bullet">&#9632;</span>OD</div>
-            <div class="panel-body">
-                <div class="gauge-circle" id="od-gauge">
-                    <div class="gauge-circle-inner">
-                        <div class="value" id="od">--</div>
-                        <div class="unit">raw</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <header style="display:flex; align-items:center; justify-content:space-between; gap:24px; padding:18px 28px; border-bottom:2px solid var(--line2); background:linear-gradient(180deg, var(--panel), var(--bg));">
+    <div style="display:flex; align-items:center; gap:16px;">
+      <div style="width:42px; height:42px; border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; box-shadow:inset 0 0 18px var(--glow); position:relative;">
+        <div style="width:14px; height:14px; background:var(--accent); box-shadow:0 0 12px var(--accent); animation:flick 3s linear infinite;"></div>
+      </div>
+      <div>
+        <div style="font-weight:700; font-size:19px; letter-spacing:.04em; color:var(--text);">BIOREACTOR&nbsp;<span style="color:var(--accent);">R-07</span></div>
+        <div id="organism" style="font-family:'JetBrains Mono',monospace; font-weight:500; font-size:11px; letter-spacing:.16em; color:var(--dim); margin-top:6px; text-transform:uppercase;">&mdash;</div>
+      </div>
     </div>
-
-    <div class="controls">
-        <div class="panel toggle" id="pump1-panel" onclick="togglePump(1)">
-            <div class="panel-header"><span class="bullet">&#9632;</span>Pump 1</div>
-            <div class="panel-body">
-                <div class="status-dot" id="pump1-dot"></div>
-                <div class="value" id="pump1-state">--</div>
-            </div>
-        </div>
-        <div class="panel toggle" id="pump2-panel" onclick="togglePump(2)">
-            <div class="panel-header"><span class="bullet">&#9632;</span>Pump 2</div>
-            <div class="panel-body">
-                <div class="status-dot" id="pump2-dot"></div>
-                <div class="value" id="pump2-state">--</div>
-            </div>
-        </div>
-        <div class="panel toggle" id="led-panel" onclick="toggleLed()">
-            <div class="panel-header"><span class="bullet">&#9632;</span>LED</div>
-            <div class="panel-body">
-                <div class="status-dot" id="led-dot"></div>
-                <div class="value" id="led-state">--</div>
-            </div>
-        </div>
+    <div style="display:flex; align-items:center; gap:22px;">
+      <div style="display:flex; align-items:center; gap:12px; font-family:'JetBrains Mono',monospace; font-weight:600; font-size:10px; letter-spacing:.14em; color:var(--dim);">
+        <div style="display:flex; align-items:center; gap:7px; border:1px solid var(--line2); padding:8px 11px;"><div style="width:7px; height:7px; border-radius:50%; background:var(--accent); box-shadow:0 0 8px var(--accent);"></div>ALGAE&nbsp;TANK</div>
+        <div style="display:flex; align-items:center; gap:7px; border:1px solid var(--line2); padding:8px 11px;"><div style="width:7px; height:7px; border-radius:50%; background:var(--accent2); box-shadow:0 0 8px var(--accent2);"></div>MUSSEL&nbsp;TANK</div>
+      </div>
+      <div style="width:1px; height:30px; background:var(--line2);"></div>
+      <div style="font-family:'JetBrains Mono',monospace; font-weight:600; font-size:11px; letter-spacing:.14em; color:var(--dim);">UPTIME&nbsp;<span id="uptime" style="color:var(--text);">00:00:00</span></div>
+      <div id="live-indicator" style="display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-weight:600; font-size:11px; letter-spacing:.14em; color:var(--accent);">
+        <div style="width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 9px var(--accent); animation:lp 1.6s ease-in-out infinite;"></div><span id="live-text">LIVE</span>
+      </div>
     </div>
+  </header>
 
-    <script>
-        const TEMP_MIN = 15, TEMP_MAX = 30;
-        const OD_GAUGE_MAX = 65000; // tune to the light sensor's typical raw-count range
+  <main style="flex:1; display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1.7fr) minmax(0,1.2fr); gap:16px; padding:16px 28px 0; align-items:stretch; min-height:0;">
 
-        function setPanelState(prefix, state) {
-            document.getElementById(`${prefix}-state`).textContent = state ?? '--';
-            const panel = document.getElementById(`${prefix}-panel`);
-            panel.classList.toggle('is-on', state === 'on');
-            panel.classList.toggle('is-off', state === 'off');
-        }
+    <!-- MUSSEL TANK THERMOMETER -->
+    <section style="background:var(--panel); border:1px solid var(--line2); display:flex; flex-direction:column;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 15px; border-bottom:1px solid var(--line); font-family:'JetBrains Mono',monospace; font-weight:600; font-size:11px; letter-spacing:.1em; color:var(--dim); text-transform:uppercase;">
+        <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><span style="color:var(--accent2);">T&middot;01</span>&nbsp;&nbsp;Mussel Tank Temp</span>
+        <div style="flex:none; width:7px; height:7px; border-radius:50%; background:var(--accent2); box-shadow:0 0 8px var(--accent2);"></div>
+      </div>
+      <div style="display:flex; gap:14px; padding:24px 20px; flex:1; min-height:300px;">
+        <div style="display:flex; flex-direction:column; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--dim); padding:2px 0 50px; text-align:right;">
+          <span>21</span><span>19</span><span>17</span><span>15</span><span>14</span>
+        </div>
+        <div style="position:relative; display:flex; flex-direction:column; align-items:center;">
+          <div data-fx="culture" style="position:absolute; inset:-26px; background:radial-gradient(circle at 50% 78%, var(--glow), transparent 70%); filter:blur(8px); pointer-events:none; opacity:.6;"></div>
+          <div style="position:relative; width:30px; flex:1; min-height:230px; background:var(--inset); border:2px solid var(--line2); overflow:hidden;">
+            <div data-fill style="position:absolute; left:0; right:0; bottom:0; height:50%; background:linear-gradient(180deg, var(--accent2), var(--accent)); box-shadow:0 0 18px var(--accent2); transition:height .6s cubic-bezier(.4,0,.2,1);"></div>
+            <div style="position:absolute; left:-2px; right:-2px; bottom:42.9%; height:14.3%; border-top:1px dashed var(--accent); border-bottom:1px dashed var(--accent); background:color-mix(in srgb, var(--accent) 12%, transparent); pointer-events:none;"></div>
+            <div data-fx="bubbles" style="position:absolute; inset:0; transition:opacity .5s; opacity:0;">
+              <div style="position:absolute; bottom:0; left:7px; width:5px; height:5px; border-radius:50%; background:var(--accent2); animation:rise 3.4s linear infinite; animation-delay:0s;"></div>
+              <div style="position:absolute; bottom:0; left:16px; width:3px; height:3px; border-radius:50%; background:var(--accent2); animation:rise 2.6s linear infinite; animation-delay:.7s;"></div>
+              <div style="position:absolute; bottom:0; left:11px; width:4px; height:4px; border-radius:50%; background:var(--accent2); animation:rise 4s linear infinite; animation-delay:1.4s;"></div>
+              <div style="position:absolute; bottom:0; left:19px; width:3px; height:3px; border-radius:50%; background:var(--accent2); animation:rise 3s linear infinite; animation-delay:2.1s;"></div>
+              <div style="position:absolute; bottom:0; left:6px; width:3px; height:3px; border-radius:50%; background:var(--accent2); animation:rise 3.8s linear infinite; animation-delay:2.8s;"></div>
+            </div>
+          </div>
+          <div style="width:46px; height:46px; border-radius:50%; background:linear-gradient(180deg, var(--accent2), var(--accent)); border:2px solid var(--line2); margin-top:-7px; box-shadow:0 0 22px var(--accent2); z-index:1;"></div>
+        </div>
+        <div style="flex:1; min-width:0; display:flex; flex-direction:column; justify-content:flex-start; gap:14px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.16em; color:var(--dim);">CURRENT</div>
+          <div style="font-weight:700; font-size:54px; line-height:.85; color:var(--text);"><span id="temp-value">--</span><span style="font-size:20px; color:var(--dim); font-weight:500;">&deg;C</span></div>
+          <div id="temp-dev" style="display:inline-flex; align-self:flex-start; align-items:center; gap:8px; border:1px solid var(--line2); padding:6px 10px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent2); letter-spacing:.06em;">&Delta; --</div>
+          <div style="margin-top:auto; display:flex; flex-direction:column; gap:9px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.1em; color:var(--dim);">
+            <div style="display:flex; justify-content:space-between; border-top:1px solid var(--line); padding-top:9px; gap:8px;"><span>OPTIMAL</span><span style="color:var(--accent);">17&ndash;18 &deg;C</span></div>
+            <div style="display:flex; justify-content:space-between; gap:8px;"><span>SETPOINT</span><span style="color:var(--text);"><span id="setpoint">--</span> &deg;C</span></div>
+            <div style="display:flex; justify-content:space-between; gap:8px;"><span>STATUS</span><span id="temp-status" style="color:var(--dim);">--</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-        function setTemperature(raw) {
-            const tempC = parseFloat(raw);
-            const display = Number.isFinite(tempC) ? tempC.toFixed(2) : '--';
-            document.getElementById('temperature').textContent = display;
+    <!-- GRAPHS -->
+    <section style="display:flex; flex-direction:column; gap:16px; min-width:0;">
+      <div style="flex:1; background:var(--panel); border:1px solid var(--line2); display:flex; flex-direction:column; min-height:0;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 15px; border-bottom:1px solid var(--line); font-family:'JetBrains Mono',monospace; font-weight:600; font-size:11px; letter-spacing:.1em; color:var(--dim); text-transform:uppercase;">
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><span style="color:var(--accent2);">TG&middot;02</span>&nbsp;&nbsp;Mussel Tank Temp &middot; 60s</span>
+          <span style="flex:none; white-space:nowrap; color:var(--accent2);"><span id="temp-graph-val">--</span> &deg;C</span>
+        </div>
+        <div style="position:relative; flex:1; min-height:150px; overflow:hidden;">
+          <canvas id="temp-canvas" width="820" height="200" style="width:100%; height:100%; display:block;"></canvas>
+          <div style="position:absolute; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, var(--accent2), transparent); opacity:.18; animation:scan 5s linear infinite;"></div>
+          <div style="position:absolute; top:8px; left:12px; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--dim);">21&deg;</div>
+          <div style="position:absolute; bottom:8px; left:12px; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--dim);">14&deg;</div>
+        </div>
+      </div>
+      <div style="flex:1; background:var(--panel); border:1px solid var(--line2); display:flex; flex-direction:column; min-height:0;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 15px; border-bottom:1px solid var(--line); font-family:'JetBrains Mono',monospace; font-weight:600; font-size:11px; letter-spacing:.1em; color:var(--dim); text-transform:uppercase;">
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><span style="color:var(--accent);">AD&middot;04</span>&nbsp;&nbsp;Algae Density &middot; Mussel Tank &middot; 60s</span>
+          <span style="flex:none; white-space:nowrap; color:var(--accent);"><span id="cell-graph-val">--</span> &times;10&#8312;</span>
+        </div>
+        <div style="position:relative; flex:1; min-height:150px; overflow:hidden;">
+          <canvas id="cell-canvas" width="820" height="200" style="width:100%; height:100%; display:block;"></canvas>
+          <div style="position:absolute; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, var(--accent), transparent); opacity:.18; animation:scan 5s linear infinite; animation-delay:1.5s;"></div>
+          <div style="position:absolute; top:8px; left:12px; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--dim);">4.5</div>
+          <div style="position:absolute; bottom:8px; left:12px; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--dim);">0.0</div>
+        </div>
+      </div>
+    </section>
 
-            const pct = Number.isFinite(tempC)
-                ? Math.max(0, Math.min(100, ((tempC - TEMP_MIN) / (TEMP_MAX - TEMP_MIN)) * 100))
-                : 0;
-            document.getElementById('temp-fill').style.height = `${pct}%`;
-        }
+    <!-- READOUTS -->
+    <section style="display:flex; flex-direction:column; gap:16px; min-height:0;">
+      <div style="background:var(--panel); border:1px solid var(--line2);">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 15px; border-bottom:1px solid var(--line); font-family:'JetBrains Mono',monospace; font-weight:600; font-size:11px; letter-spacing:.1em; color:var(--dim); text-transform:uppercase;">
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><span style="color:var(--accent);">OD&middot;600</span>&nbsp;&nbsp;Feed Line Density</span>
+          <div style="flex:none; width:7px; height:7px; border-radius:50%; background:var(--accent); box-shadow:0 0 8px var(--accent);"></div>
+        </div>
+        <div style="padding:22px;">
+          <div style="display:flex; align-items:flex-end; gap:8px;">
+            <div id="od-value" style="font-weight:700; font-size:60px; line-height:.85; color:var(--text);">--</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--dim); padding-bottom:9px; letter-spacing:.1em;">raw</div>
+          </div>
+          <div style="margin-top:18px; height:8px; background:var(--inset); border:1px solid var(--line2); position:relative; overflow:hidden;">
+            <div data-fx="odbar" style="position:absolute; left:0; top:0; bottom:0; width:0%; background:linear-gradient(90deg, var(--accent2), var(--accent)); box-shadow:0 0 10px var(--accent); transition:width .6s ease;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top:8px; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--dim);"><span>0</span><span>FULL SCALE</span></div>
+          <div style="margin-top:14px; border-top:1px solid var(--line); padding-top:12px; display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.12em; color:var(--dim);"><span>SENSOR</span><span id="od-status" style="color:var(--dim);">--</span></div>
+        </div>
+      </div>
+      <div style="flex:1; background:var(--panel); border:1px solid var(--line2); display:flex; flex-direction:column;">
+        <div style="padding:11px 15px; border-bottom:1px solid var(--line); font-family:'JetBrains Mono',monospace; font-weight:600; font-size:11px; letter-spacing:.1em; color:var(--dim); text-transform:uppercase;"><span style="color:var(--accent);">CX&middot;05</span>&nbsp;&nbsp;Algae Density</div>
+        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; padding:26px 24px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--dim);">ALGAE DENSITY &middot; MUSSEL TANK</div>
+          <div style="display:flex; align-items:flex-end; gap:10px; margin-top:16px;">
+            <div id="cell-value" style="font-weight:700; font-size:52px; line-height:.82; color:var(--text);">--</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--dim); padding-bottom:7px; letter-spacing:.06em;">&times;10&#8312; cells/mL</div>
+          </div>
+          <div style="margin-top:20px; height:8px; background:var(--inset); border:1px solid var(--line2); position:relative; overflow:hidden;">
+            <div data-fx="cellbar" style="position:absolute; left:0; top:0; bottom:0; width:0%; background:linear-gradient(90deg, var(--accent2), var(--accent)); box-shadow:0 0 10px var(--accent); transition:width .6s ease;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top:8px; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--dim);"><span>0.0</span><span>4.5 SATURATION</span></div>
+          <div style="margin-top:18px; font-family:'JetBrains Mono',monospace; font-size:9px; line-height:1.6; color:var(--dim); letter-spacing:.04em;">Algae delivered by feed pump &middot; cleared by mussel filtration</div>
+        </div>
+      </div>
+    </section>
+  </main>
 
-        function setOd(raw) {
-            const od = parseFloat(raw);
-            document.getElementById('od').textContent = Number.isFinite(od) ? od : '--';
+  <!-- ACTUATORS -->
+  <footer style="padding:16px 28px 28px;">
+    <section style="background:var(--panel); border:1px solid var(--line2);">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 15px; border-bottom:1px solid var(--line); font-family:'JetBrains Mono',monospace; font-weight:600; font-size:11px; letter-spacing:.12em; color:var(--dim); text-transform:uppercase;">
+        <span><span style="color:var(--warn);">AX&middot;09</span>&nbsp;&nbsp;Actuator Control &middot; Manual Override</span>
+        <span style="color:var(--dim);">ALARMS&nbsp;<span style="color:var(--accent);">0</span></span>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr);">
 
-            const pct = Number.isFinite(od) ? Math.max(0, Math.min(100, (od / OD_GAUGE_MAX) * 100)) : 0;
-            document.getElementById('od-gauge').style.setProperty('--pct', `${pct}%`);
-        }
+        <div style="display:flex; flex-direction:column; gap:18px; padding:22px; border-right:1px solid var(--line);">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:44px; height:44px; flex:none; border:2px solid var(--line2); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:13px; color:var(--accent); position:relative;">LS<div data-ctl="led" data-role="glow" style="position:absolute; inset:0; box-shadow:inset 0 0 14px var(--accent); opacity:0; transition:opacity .25s;"></div></div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:700; font-size:14px; letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">OD SENSOR LED</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--dim); letter-spacing:.1em; margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">660nm SOURCE &middot; FEED LINE</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <span data-ctl="led" data-role="status" style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.16em; color:var(--dim);">--</span>
+            <button data-toggle="led" style="appearance:none; background:transparent; border:none; cursor:pointer; padding:0; flex:none;">
+              <div data-ctl="led" data-role="track" style="position:relative; width:66px; height:34px; border:2px solid var(--line2); background:var(--inset);">
+                <div data-ctl="led" data-role="glow" style="position:absolute; inset:0; background:var(--accent); opacity:0; transition:opacity .25s;"></div>
+                <div data-ctl="led" data-role="knob" style="position:absolute; top:2px; left:0; width:26px; height:26px; background:var(--line2); transform:translateX(2px); transition:transform .25s cubic-bezier(.4,0,.2,1), background .25s;"></div>
+              </div>
+            </button>
+          </div>
+        </div>
 
-        async function refresh() {
-            const res = await fetch('/status');
-            const data = await res.json();
-            setTemperature(data.temperature);
-            setOd(data.od);
-            setPanelState('pump1', data.pump1_state);
-            setPanelState('pump2', data.pump2_state);
-            setPanelState('led', data.led_state);
-        }
+        <div style="display:flex; flex-direction:column; gap:18px; padding:22px; border-right:1px solid var(--line);">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:44px; height:44px; flex:none; border:2px solid var(--line2); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:13px; color:var(--accent); position:relative;">FP<div data-ctl="feed" data-role="glow" style="position:absolute; inset:0; box-shadow:inset 0 0 14px var(--accent); opacity:0; transition:opacity .25s;"></div></div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:700; font-size:14px; letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">ALGAE FEED PUMP</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--dim); letter-spacing:.1em; margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">PERISTALTIC P-1 &middot; 0.8 mL/min</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <span data-ctl="feed" data-role="status" style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--dim); white-space:nowrap;">--</span>
+            <div style="display:flex; flex:none; border:2px solid var(--line2); height:34px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.06em;">
+              <button data-seg-btn="feed:off" style="appearance:none; border:none; background:transparent; cursor:pointer; color:var(--dim); padding:0 11px; transition:all .2s;">OFF</button>
+              <button data-seg-btn="feed:auto" style="appearance:none; border:none; border-left:2px solid var(--line2); background:transparent; cursor:pointer; color:var(--dim); padding:0 11px; transition:all .2s;">AUTO</button>
+              <button data-seg-btn="feed:on" style="appearance:none; border:none; border-left:2px solid var(--line2); background:transparent; cursor:pointer; color:var(--dim); padding:0 11px; transition:all .2s;">ON</button>
+            </div>
+          </div>
+        </div>
 
-        async function togglePump(id) {
-            const current = document.getElementById(`pump${id}-state`).textContent;
-            const next = current === 'on' ? 'off' : 'on';
-            await fetch(`/pump/${id}/${next}`, { method: 'POST' });
-            refresh();
-        }
+        <div style="display:flex; flex-direction:column; gap:18px; padding:22px;">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:44px; height:44px; flex:none; border:2px solid var(--line2); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:13px; color:var(--accent2); position:relative;">CP<div data-ctl="cool" data-role="glow" style="position:absolute; inset:0; box-shadow:inset 0 0 14px var(--accent2); opacity:0; transition:opacity .25s;"></div></div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:700; font-size:14px; letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">COOLANT LOOP</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--dim); letter-spacing:.1em; margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">MUSSEL TANK &middot; &Delta;-3.2&deg;C</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <span data-ctl="cool" data-role="status" style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--dim); white-space:nowrap;">--</span>
+            <div style="display:flex; flex:none; border:2px solid var(--line2); height:34px; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.06em;">
+              <button data-seg-btn="cool:off" style="appearance:none; border:none; background:transparent; cursor:pointer; color:var(--dim); padding:0 11px; transition:all .2s;">OFF</button>
+              <button data-seg-btn="cool:auto" style="appearance:none; border:none; border-left:2px solid var(--line2); background:transparent; cursor:pointer; color:var(--dim); padding:0 11px; transition:all .2s;">AUTO</button>
+              <button data-seg-btn="cool:on" style="appearance:none; border:none; border-left:2px solid var(--line2); background:transparent; cursor:pointer; color:var(--dim); padding:0 11px; transition:all .2s;">ON</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </footer>
+</div>
 
-        async function toggleLed() {
-            const current = document.getElementById('led-state').textContent;
-            const next = current === 'on' ? 'off' : 'on';
-            await fetch(`/led/${next}`, { method: 'POST' });
-            refresh();
-        }
+<script>
+  // ---- Display-only constants (no backend control loop yet — see IMPLEMENT.md) ----
+  const SETPOINT     = 17.5;        // target temp; no backend setpoint endpoint yet
+  const TEMP_MIN     = 14, TEMP_MAX = 21;   // thermometer + temp graph domain (°C)
+  const OPT_LO       = 17, OPT_HI   = 18;   // optimal band for STATUS derivation
+  const OD_MAX       = 65000;       // raw-count full-scale for the OD bar (tune to sensor)
+  const CELL_MIN     = 0, CELL_MAX  = 4.5;  // algae-density graph/bar domain (×10⁸ cells/mL)
+  const HIST_LEN     = 90;          // ~60s of history at the 700ms poll cadence
+  const POLL_MS      = 1000;
+  const ORGANISM     = 'Mytilus edulis ⇄ Chlorella';
 
-        refresh();
-        setInterval(refresh, 1000);
-    </script>
+  // Maps the design's two named pumps onto the backend's generic pump ids.
+  const PUMP_ID = { feed: 1, cool: 2 };
+
+  const root = document.getElementById('root');
+  const $ = id => document.getElementById(id);
+
+  // pump UI mode: 'off' | 'auto' | 'on'. Initialised from the first real /status,
+  // then driven by the operator. 'auto' is a UI-only placeholder (see IMPLEMENT.md).
+  const mode = { feed: null, cool: null };
+  // last seen real pump states, so an AUTO re-render can reflect actual hardware status
+  const lastState = { pump1: 'off', pump2: 'off' };
+  const startedAt = Date.now();
+
+  let tempHist = [];
+  let cellHist = [];
+
+  document.getElementById('organism').textContent = ORGANISM;
+  $('setpoint').textContent = SETPOINT.toFixed(1);
+
+  // ---------- canvas line graphs (ported from the design) ----------
+  function hexA(c, a) {
+    c = (c || '').trim().replace('#', '');
+    if (c.length === 3) c = c.split('').map(x => x + x).join('');
+    if (c.length < 6) return 'rgba(120,180,140,' + a + ')';
+    const n = parseInt(c.slice(0, 6), 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+
+  function drawGraph(canvas, data, min, max, color, lineCol) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height, pad = 8;
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = lineCol; ctx.lineWidth = 1; ctx.globalAlpha = .55;
+    for (let i = 0; i <= 4; i++) { const y = Math.round(H * i / 4) + 0.5; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+    for (let i = 0; i <= 8; i++) { const x = Math.round(W * i / 8) + 0.5; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+    if (!data.length) return;
+    const n = data.length;
+    const X = i => n > 1 ? i / (n - 1) * W : 0;
+    const Y = v => H - pad - (Math.min(max, Math.max(min, v)) - min) / (max - min) * (H - pad * 2);
+    ctx.beginPath(); ctx.moveTo(0, H);
+    for (let i = 0; i < n; i++) ctx.lineTo(X(i), Y(data[i]));
+    ctx.lineTo(W, H); ctx.closePath();
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, hexA(color, .30)); g.addColorStop(1, hexA(color, 0));
+    ctx.fillStyle = g; ctx.fill();
+    ctx.shadowColor = color; ctx.shadowBlur = 12;
+    ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) { const x = X(i), y = Y(data[i]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.stroke(); ctx.shadowBlur = 0;
+    const lx = X(n - 1), ly = Y(data[n - 1]);
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(lx, ly, 3.5, 0, 7); ctx.fill();
+    ctx.globalAlpha = .25; ctx.beginPath(); ctx.arc(lx, ly, 8, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+  }
+
+  function drawGraphs() {
+    const cs = getComputedStyle(root);
+    const accent = cs.getPropertyValue('--accent').trim();
+    const accent2 = cs.getPropertyValue('--accent2').trim();
+    const line = cs.getPropertyValue('--line2').trim();
+    drawGraph($('temp-canvas'), tempHist, TEMP_MIN, TEMP_MAX, accent2, line);
+    drawGraph($('cell-canvas'), cellHist, CELL_MIN, CELL_MAX, accent, line);
+  }
+  window.addEventListener('resize', drawGraphs);
+
+  // ---------- meters ----------
+  function syncMeters(temp, od, cell) {
+    const fill = root.querySelector('[data-fill]');
+    if (fill) {
+      const p = Number.isFinite(temp)
+        ? Math.max(3, Math.min(100, (temp - TEMP_MIN) / (TEMP_MAX - TEMP_MIN) * 100))
+        : 0;
+      fill.style.height = p + '%';
+    }
+    const odbar = root.querySelector('[data-fx="odbar"]');
+    if (odbar) odbar.style.width = (Number.isFinite(od) ? Math.max(0, Math.min(100, od / OD_MAX * 100)) : 0) + '%';
+    const cellbar = root.querySelector('[data-fx="cellbar"]');
+    if (cellbar) cellbar.style.width = (Number.isFinite(cell) ? Math.max(2, Math.min(100, cell / CELL_MAX * 100)) : 0) + '%';
+  }
+
+  // ---------- actuator visuals ----------
+  function renderLed(on) {
+    root.querySelectorAll('[data-ctl="led"]').forEach(el => {
+      const role = el.dataset.role;
+      if (role === 'knob') { el.style.transform = 'translateX(' + (on ? '30px' : '2px') + ')'; el.style.background = on ? 'var(--accent)' : 'var(--line2)'; el.style.boxShadow = on ? '0 0 12px var(--accent)' : 'none'; }
+      if (role === 'glow') { el.style.opacity = on ? (el.parentElement && el.parentElement.dataset.role === 'track' ? '.16' : '1') : '0'; }
+      if (role === 'track') { el.style.borderColor = on ? 'var(--accent)' : 'var(--line2)'; }
+      if (role === 'status') { el.textContent = on ? 'ONLINE' : 'STANDBY'; el.style.color = on ? 'var(--accent)' : 'var(--dim)'; }
+    });
+  }
+
+  function renderPump(key, realState) {
+    const cv = key === 'feed' ? '--accent' : '--accent2';
+    const col = 'var(' + cv + ')';
+    const active = realState === 'on';
+    const m = mode[key];
+    root.querySelectorAll('[data-seg-btn^="' + key + ':"]').forEach(el => {
+      const seg = el.dataset.segBtn.split(':')[1];
+      const sel = m === seg;
+      el.style.background = sel ? 'color-mix(in srgb, ' + col + ' 18%, transparent)' : 'transparent';
+      el.style.color = sel ? col : 'var(--dim)';
+      el.style.boxShadow = sel ? 'inset 0 0 12px color-mix(in srgb, ' + col + ' 35%, transparent)' : 'none';
+    });
+    root.querySelectorAll('[data-ctl="' + key + '"][data-role="glow"]').forEach(el => el.style.opacity = active ? '1' : '0');
+    const st = root.querySelector('[data-ctl="' + key + '"][data-role="status"]');
+    if (st) {
+      st.textContent = m === 'auto' ? (active ? 'AUTO · RUNNING' : 'AUTO · IDLE')
+        : (m === 'on' ? 'FORCED ON' : (m === 'off' ? 'OFFLINE' : (active ? 'RUNNING' : 'IDLE')));
+      st.style.color = active ? col : (m === 'off' ? 'var(--dim)' : 'var(--mid)');
+    }
+    // bubbles in the thermometer track visualise the coolant loop running
+    if (key === 'cool') {
+      const bb = root.querySelector('[data-fx="bubbles"]');
+      if (bb) bb.style.opacity = active ? '1' : '0';
+    }
+  }
+
+  // ---------- backend wiring ----------
+  async function refresh() {
+    let data;
+    try {
+      const res = await fetch('/status');
+      data = await res.json();
+      setLive(true);
+    } catch (e) {
+      setLive(false);
+      return;
+    }
+
+    const temp = parseFloat(data.temperature);
+    const od = parseFloat(data.od);
+    // Algae density (cell count) has no backend source yet — see IMPLEMENT.md.
+    const cell = data.cell != null ? parseFloat(data.cell) : NaN;
+
+    // temperature readout + status
+    $('temp-value').textContent = Number.isFinite(temp) ? temp.toFixed(1) : '--';
+    $('temp-graph-val').textContent = Number.isFinite(temp) ? temp.toFixed(1) : '--';
+    if (Number.isFinite(temp)) {
+      const dev = temp - SETPOINT;
+      $('temp-dev').innerHTML = 'Δ ' + (dev >= 0 ? '+' : '') + dev.toFixed(1) + ' °C';
+      const status = (temp >= OPT_LO && temp <= OPT_HI) ? 'NOMINAL'
+        : ((temp >= OPT_LO - 1 && temp <= OPT_HI + 1) ? 'DRIFT' : 'WARNING');
+      const sc = status === 'NOMINAL' ? 'var(--accent)' : (status === 'DRIFT' ? 'var(--accent2)' : 'var(--warn)');
+      $('temp-status').textContent = status;
+      $('temp-status').style.color = sc;
+    }
+
+    // OD readout (raw counts; needs the LED source to be on to be meaningful)
+    const ledOn = data.led_state === 'on';
+    $('od-value').textContent = (ledOn && Number.isFinite(od)) ? String(od) : '—';
+    const odStatus = !ledOn ? 'SENSOR OFFLINE' : (data.pump1_state === 'on' ? 'FEEDING ACTIVE' : 'NO FLOW');
+    $('od-status').textContent = odStatus;
+    $('od-status').style.color = !ledOn ? 'var(--warn)' : (data.pump1_state === 'on' ? 'var(--accent)' : 'var(--dim)');
+
+    // algae density readout (placeholder until backend provides it)
+    $('cell-value').textContent = Number.isFinite(cell) ? cell.toFixed(1) : '—';
+    $('cell-graph-val').textContent = Number.isFinite(cell) ? cell.toFixed(1) : '—';
+
+    // initialise pump UI modes from the first real reading; remember states for AUTO re-render
+    if (mode.feed === null) mode.feed = data.pump1_state === 'on' ? 'on' : 'off';
+    if (mode.cool === null) mode.cool = data.pump2_state === 'on' ? 'on' : 'off';
+    lastState.pump1 = data.pump1_state;
+    lastState.pump2 = data.pump2_state;
+
+    // history for the graphs
+    if (Number.isFinite(temp)) { tempHist.push(temp); while (tempHist.length > HIST_LEN) tempHist.shift(); }
+    if (Number.isFinite(cell)) { cellHist.push(cell); while (cellHist.length > HIST_LEN) cellHist.shift(); }
+
+    renderLed(ledOn);
+    renderPump('feed', data.pump1_state);
+    renderPump('cool', data.pump2_state);
+    syncMeters(temp, od, cell);
+    drawGraphs();
+  }
+
+  function setLive(ok) {
+    const txt = $('live-text');
+    const ind = $('live-indicator');
+    if (!txt || !ind) return;
+    txt.textContent = ok ? 'LIVE' : 'OFFLINE';
+    ind.style.color = ok ? 'var(--accent)' : 'var(--warn)';
+  }
+
+  // uptime is measured from page load (no backend uptime field — see IMPLEMENT.md)
+  function tickUptime() {
+    const s = Math.floor((Date.now() - startedAt) / 1000);
+    const pad = x => String(x).padStart(2, '0');
+    $('uptime').textContent = pad(Math.floor(s / 3600)) + ':' + pad(Math.floor((s % 3600) / 60)) + ':' + pad(s % 60);
+  }
+
+  // ---------- control handlers ----------
+  async function postPump(key, cmd) {
+    await fetch('/pump/' + PUMP_ID[key] + '/' + cmd, { method: 'POST' });
+    refresh();
+  }
+
+  document.querySelector('[data-toggle="led"]').addEventListener('click', async () => {
+    const on = root.querySelector('[data-ctl="led"][data-role="status"]').textContent === 'ONLINE';
+    await fetch('/led/' + (on ? 'off' : 'on'), { method: 'POST' });
+    refresh();
+  });
+
+  document.querySelectorAll('[data-seg-btn]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const [key, seg] = btn.dataset.segBtn.split(':');
+      mode[key] = seg;
+      if (seg === 'on') postPump(key, 'on');
+      else if (seg === 'off') postPump(key, 'off');
+      // 'auto' has no backend control loop yet — UI-only (see IMPLEMENT.md).
+      // Re-render immediately so the selected segment highlights without waiting for the poll.
+      else renderPump(key, key === 'feed' ? lastState.pump1 : lastState.pump2);
+    });
+  });
+
+  tickUptime();
+  setInterval(tickUptime, 1000);
+  refresh();
+  setInterval(refresh, POLL_MS);
+</script>
 </body>
 </html>
