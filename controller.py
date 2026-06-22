@@ -15,6 +15,8 @@ from controller_config import (
 )
 
 LED_ON_BRIGHTNESS = 255
+WIFI_CONNECT_TIMEOUT_SECONDS = 15
+WIFI_RETRY_DELAY_SECONDS = 5
 
 client = MQTTClient(
     b"esp32_db4",
@@ -73,14 +75,38 @@ def on_command(topic, msg):
             client.publish(b"db4/led/state", b"off")
 
 
-# Connect WiFi.
-wlan = network.WLAN(network.STA_IF)
-if not wlan.active():
-    wlan.active(True)
-if not wlan.isconnected():
-    wlan.connect(WIFI_SSID, WIFI_PASSWORD)
+def connect_wifi():
+    wlan = network.WLAN(network.STA_IF)
+    if not wlan.active():
+        wlan.active(True)
+
+    attempt = 1
     while not wlan.isconnected():
-        time.sleep(0.1)
+        print("Connecting to WiFi, attempt", attempt)
+        try:
+            wlan.disconnect()
+        except Exception:
+            pass
+        time.sleep(1)
+
+        wlan.connect(WIFI_SSID, WIFI_PASSWORD)
+        waited = 0
+        while waited < WIFI_CONNECT_TIMEOUT_SECONDS:
+            if wlan.isconnected():
+                print("WiFi connected:", wlan.ifconfig())
+                return wlan
+            time.sleep(1)
+            waited += 1
+
+        print("WiFi not connected, status:", wlan.status())
+        attempt += 1
+        time.sleep(WIFI_RETRY_DELAY_SECONDS)
+
+    print("WiFi already connected:", wlan.ifconfig())
+    return wlan
+
+
+wlan = connect_wifi()
 
 # Connect MQTT before importing heavier hardware modules. The TLS handshake
 # needs a large temporary allocation on the ESP32.
