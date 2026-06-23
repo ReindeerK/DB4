@@ -23,11 +23,13 @@ def init_sensor():
     # Bits 2-3: Gain selection (01 = 8x gain, 00 = 1x, 10 = 2x, 11 = 4x)
     # Using 0x01 = fixed 1x gain, ALS enabled
     # (lowered from 8x: sensor was saturating/maxing out at low OD concentrations)
-    i2c.writeto_mem(LTR329_ADDR, ALS_CONTR, b"\x01")
+    # i2c.writeto_mem(LTR329_ADDR, ALS_CONTR, b"\x01")
+    i2c.writeto_mem(LTR329_ADDR, ALS_CONTR, b"\x1D")
     time.sleep(0.01)
 
     # Set measurement rate (100ms integration time, 500ms repeat rate)
-    i2c.writeto_mem(LTR329_ADDR, ALS_MEAS_RATE, b"\x03")
+    # i2c.writeto_mem(LTR329_ADDR, ALS_MEAS_RATE, b"\x03")
+    i2c.writeto_mem(LTR329_ADDR, ALS_MEAS_RATE, b"\x0B")
     time.sleep(0.01)
 
     print("LTR-329 initialized (fixed gain mode)")
@@ -55,6 +57,7 @@ def read_sensor(samples=5):
 # ===== LED FUNCTIONS =====
 def set_blue_brightness(brightness):
     """Set blue LED brightness (0-255)"""
+    # Halved PWM intensity: OD values were reading too high (too much light)
     duty = int((brightness / 255) * 1023)
     blue_led.duty(duty)
 

@@ -120,7 +120,7 @@ from light_sensor import init_sensor, read_sensor
 from rgb_led import set_blue_brightness
 
 pump1 = Pump(pin=32, use_pwm=False)
-pump2 = Pump(pin=33, use_pwm=False)
+pump2 = Pump(pin=27, use_pwm=False)
 set_blue_brightness(LED_ON_BRIGHTNESS)  # LED defaults to on at boot
 
 try:
