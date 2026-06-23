@@ -21,8 +21,9 @@ def init_sensor():
     # Set ALS control register with fixed gain (no auto-gain)
     # Bit 0: ALS enable (1)
     # Bits 2-3: Gain selection (01 = 8x gain, 00 = 1x, 10 = 2x, 11 = 4x)
-    # Using 0x09 = fixed 8x gain, ALS enabled
-    i2c.writeto_mem(LTR329_ADDR, ALS_CONTR, b"\x09")
+    # Using 0x01 = fixed 1x gain, ALS enabled
+    # (lowered from 8x: sensor was saturating/maxing out at low OD concentrations)
+    i2c.writeto_mem(LTR329_ADDR, ALS_CONTR, b"\x01")
     time.sleep(0.01)
 
     # Set measurement rate (100ms integration time, 500ms repeat rate)
