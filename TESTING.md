@@ -11,6 +11,7 @@ cross-platform.
   reads sensors and controls the pump.
 - `pump.py`, `temperature.py`, `light_sensor.py`, `rgb_led.py` — individual
   hardware drivers, each can be run standalone for a bench test.
+- `temp_pid.py` — temperature regulation logic for the coolant loop.
 - `main.py` — the boot entry point, just imports `controller`.
 - `logger.py` — runs on the laptop, subscribes to all MQTT messages and
   writes them to a CSV file.
@@ -208,13 +209,27 @@ ipconfig
 
 Look for the **IPv4 Address** under your WiFi adapter (e.g. `192.168.1.105`).
 
-Open `controller.py` and edit these lines near the top/bottom:
+Create `controller_config.py` from `controller_config.example.py`, then set
+WiFi, MQTT, and the temperature-control values for your hardware:
 
 ```python
-BROKER_IP = "192.168.1.105"   # <- your laptop's IPv4 address from ipconfig
-...
-wlan.connect("YourSSID", "YourPassword")  # <- your real WiFi name/password
+WIFI_SSID = "YourSSID"
+WIFI_PASSWORD = "YourPassword"
+MQTT_HOST = "192.168.1.105"   # <- your laptop's IPv4 address from ipconfig
+
+TEMP_CONTROL_MODE = "auto"
+TEMP_SETPOINT_C = 17.5
+TEMP_MIN_C = 17.0
+TEMP_MAX_C = 18.0
+TEMP_AVERAGE_SAMPLES = 12
+TEMP_AVERAGE_SAMPLE_DELAY_MS = 120
 ```
+
+Leave `TEMP_PID_KD = 0.0` for the first run. Tune `TEMP_PID_KP`,
+`TEMP_PID_KI`, `TEMP_PREDICTION_HORIZON_SECONDS`, and the feed-forward values
+from logged tank data once the sensors and coolant loop are stable. The
+published temperature is the mean of the valid thermistor readings collected
+inside each 2 second report interval.
 
 > The ESP32 only supports **2.4 GHz** WiFi networks — if your router has a
 > separate 5 GHz network with the same name, make sure the ESP32 can see a
@@ -227,7 +242,7 @@ wlan.connect("YourSSID", "YourPassword")  # <- your real WiFi name/password
 Copy every module the controller needs onto the board's root filesystem:
 
 ```powershell
-mpremote connect COM3 cp pump.py : + cp temperature.py : + cp light_sensor.py : + cp rgb_led.py : + cp controller.py : + cp main.py :
+mpremote connect COM3 cp pump.py : + cp temp_pid.py : + cp temperature.py : + cp light_sensor.py : + cp rgb_led.py : + cp controller.py : + cp controller_config.py : + cp main.py :
 ```
 
 (The `+` chains multiple commands in a single connection.)

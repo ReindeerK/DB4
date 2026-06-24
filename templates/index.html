@@ -222,7 +222,7 @@
 <script>
   const APP_NAME     = {{ app_name|tojson }};
   // ---- Display constants and backend wiring ----
-  const SETPOINT     = 17.5;        // target temp; no backend setpoint endpoint yet
+  let SETPOINT       = 17.5;        // overwritten by controller telemetry when available
   const TEMP_MIN     = 14, TEMP_MAX = 21;   // thermometer + temp graph domain (°C)
   const OPT_LO       = 17, OPT_HI   = 18;   // optimal band for STATUS derivation
   const OD_MAX       = 65000;       // raw-count full-scale for the OD bar (tune to sensor)
@@ -238,14 +238,14 @@
   const root = document.getElementById('root');
   const $ = id => document.getElementById(id);
 
-  // pump UI mode: 'off' | 'auto' | 'on'. Feed AUTO is backed by the ESP32
-  // closed-loop controller; coolant AUTO remains a visual/manual placeholder.
+  // pump UI mode: 'off' | 'auto' | 'on'. AUTO modes are backed by ESP32 logic.
   const mode = { feed: null, cool: null };
   // last seen real pump states, so an AUTO re-render can reflect actual hardware status
   const lastState = { pump1: 'off', pump2: 'off' };
   const startedAt = Date.now();
   let serverUptime = null;
   let serverUptimeSeenAt = Date.now();
+  let coolOutput = null;
 
   let tempHist = [];
   let cellHist = [];
@@ -415,7 +415,10 @@
     root.querySelectorAll('[data-ctl="' + key + '"][data-role="glow"]').forEach(el => el.style.opacity = active ? '1' : '0');
     const st = root.querySelector('[data-ctl="' + key + '"][data-role="status"]');
     if (st) {
-      st.textContent = m === 'auto' ? (active ? 'AUTO · RUNNING' : 'AUTO · IDLE')
+      const autoText = key === 'cool' && Number.isFinite(coolOutput)
+        ? 'AUTO · ' + coolOutput.toFixed(0) + '%'
+        : (active ? 'AUTO · RUNNING' : 'AUTO · IDLE');
+      st.textContent = m === 'auto' ? autoText
         : (m === 'on' ? 'FORCED ON' : (m === 'off' ? 'OFFLINE' : (active ? 'RUNNING' : 'IDLE')));
       st.style.color = active ? col : (m === 'off' ? 'var(--dim)' : 'var(--mid)');
     }
@@ -460,6 +463,8 @@
     const temp = parseFloat(data.temperature);
     const od = parseFloat(data.od);
     const cell = data.cell != null ? parseFloat(data.cell) : NaN;
+    const pidSetpoint = parseFloat(data.temp_control_setpoint);
+    coolOutput = parseFloat(data.temp_control_output);
     const feedVisualState = ['DOSING', 'FORCED_ON'].includes(data.feed_status) ? 'on' : 'off';
     if (Number.isFinite(data.uptime_seconds)) {
       serverUptime = data.uptime_seconds;
@@ -468,6 +473,10 @@
     if (data.app_name) {
       $('brand-name').textContent = data.app_name;
       document.title = data.app_name;
+    }
+    if (Number.isFinite(pidSetpoint)) {
+      SETPOINT = pidSetpoint;
+      $('setpoint').textContent = SETPOINT.toFixed(1);
     }
     $('cell-scale-label').textContent = CELL_MAX.toFixed(0);
 
@@ -498,7 +507,8 @@
     // initialise pump UI modes from the first real reading; remember states for AUTO re-render
     if (['off', 'auto', 'on'].includes(data.feed_mode)) mode.feed = data.feed_mode;
     else if (mode.feed === null) mode.feed = data.pump1_state === 'on' ? 'on' : 'off';
-    if (mode.cool === null) mode.cool = data.pump2_state === 'on' ? 'on' : 'off';
+    if (['off', 'auto', 'on'].includes(data.cool_mode)) mode.cool = data.cool_mode;
+    else if (mode.cool === null) mode.cool = data.pump2_state === 'on' ? 'on' : 'off';
     lastState.pump1 = feedVisualState;
     lastState.pump2 = data.pump2_state;
 
@@ -542,6 +552,11 @@
     refresh();
   }
 
+  async function postCoolMode(modeName) {
+    await fetch('/cool/mode/' + modeName, { method: 'POST' });
+    refresh();
+  }
+
   document.querySelector('[data-toggle="led"]').addEventListener('click', async () => {
     const on = root.querySelector('[data-ctl="led"][data-role="status"]').textContent === 'ONLINE';
     await fetch('/led/' + (on ? 'off' : 'on'), { method: 'POST' });
@@ -554,6 +569,8 @@
       mode[key] = seg;
       if (key === 'feed') {
         postFeedMode(seg);
+      } else if (key === 'cool') {
+        postCoolMode(seg);
       } else if (seg === 'on') {
         postPump(key, 'on');
       } else if (seg === 'off') {
