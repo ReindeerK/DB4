@@ -42,7 +42,9 @@ LED calibration. For first-time setup from a blank laptop/board, see
    python webapp.py
    ```
    Then open http://localhost:5000 in a browser. You should see live
-   Temperature and OD readings, plus ON/OFF buttons for Pump 1 and Pump 2.
+   Temperature and OD readings, plus ON/OFF/AUTO controls for the feed pump.
+   Use AUTO only after `controller_config.py` contains the measured OD
+   calibration and feed-pump flow rate.
 
 5. *(Optional)* **Logger** — to record everything to CSV:
    ```powershell
@@ -54,6 +56,21 @@ LED calibration. For first-time setup from a blank laptop/board, see
 - Stop `webapp.py` / `logger.py` with Ctrl+C.
 - The ESP32 can just be unplugged — both pumps come back up OFF on the next
   boot/reconnect.
+
+## Autonomous feeding
+
+The feed pump can run in three modes:
+
+- **OFF** keeps the algae feed pump stopped.
+- **ON** forces the algae feed pump on for manual priming/testing.
+- **AUTO** lets the ESP32 dose algae from the OD-derived concentration.
+
+In AUTO, the controller keeps the mussel-tank concentration between
+`FEED_LOW_FRACTION * FEED_TARGET_CONCENTRATION` and
+`FEED_HIGH_FRACTION * FEED_TARGET_CONCENTRATION`. When the OD-derived
+concentration falls below the low threshold, it computes the required dose from
+the mass-balance model and runs Pump 1 for the calibrated time. If the
+concentration is too high or the OD signal is missing/stale, the pump stays off.
 
 ---
 
