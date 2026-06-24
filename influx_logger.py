@@ -37,6 +37,15 @@ TOPIC_FIELDS = {
     "db4/pump1/state": ("pump1_state", str),
     "db4/pump2/state": ("pump2_state", str),
     "db4/led/state": ("led_state", str),
+    "db4/cool/mode": ("cool_mode", str),
+    "db4/temp/control/status": ("temp_control_status", str),
+    "db4/temp/control/setpoint": ("temp_control_setpoint", float),
+    "db4/temp/control/predicted": ("temp_control_predicted", float),
+    "db4/temp/control/filtered": ("temp_control_filtered", float),
+    "db4/temp/control/rate_c_per_min": ("temp_control_rate_c_per_min", float),
+    "db4/temp/control/output": ("temp_control_output", float),
+    "db4/temp/control/feed_forward": ("temp_control_feed_forward", float),
+    "db4/temp/control/sample_count": ("temp_control_sample_count", int),
 }
 
 influx_client = None

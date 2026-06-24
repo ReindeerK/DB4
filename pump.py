@@ -23,9 +23,11 @@ class Pump:
         """
         self.pin = pin
         self.use_pwm = use_pwm
+        self.speed_percent = 0
 
         if use_pwm:
             self.pwm = PWM(Pin(pin), freq=freq)
+            self.set_speed(0)
         else:
             self.digital = Pin(pin, Pin.OUT, value=0)
 
@@ -35,6 +37,7 @@ class Pump:
             self.set_speed(100)
         else:
             self.digital.value(1)
+            self.speed_percent = 100
             print("Pump ON")
 
     def off(self):
@@ -43,27 +46,31 @@ class Pump:
             self.set_speed(0)
         else:
             self.digital.value(0)
+            self.speed_percent = 0
             print("Pump OFF")
 
-    # def set_speed(self, speed_percent):
-    #     """
-    #     Set pump speed as percentage (0-100). Only works if use_pwm=True.
+    def set_speed(self, speed_percent):
+        """
+        Set pump speed as percentage (0-100).
 
-    #     Args:
-    #         speed_percent: 0 (off) to 100 (full speed)
-    #     """
-    #     if not self.use_pwm:
-    #         print("Speed control requires use_pwm=True")
-    #         return
+        PWM pumps receive a proportional duty cycle. Non-PWM pumps are driven
+        on when speed is above zero and off when speed is zero.
+        """
+        speed_percent = max(0, min(100, speed_percent))
+        self.speed_percent = speed_percent
 
-    # # Clamp to valid range
-    # speed_percent = max(0, min(100, speed_percent))
+        if self.use_pwm:
+            duty = int(65535 * (speed_percent / 100))
+            self.pwm.duty_u16(duty)
+        else:
+            self.digital.value(1 if speed_percent > 0 else 0)
 
-    # # Convert percentage to 16-bit duty cycle
-    # duty = int(65535 * (speed_percent / 100))
-    # self.pwm.duty_u16(duty)
+        print(f"Pump speed: {speed_percent}%")
 
-    # print(f"Pump speed: {speed_percent}%")
+    def is_on(self):
+        if self.use_pwm:
+            return self.speed_percent > 0
+        return self.digital.value() == 1
 
     def stop(self):
         """Stop the pump."""

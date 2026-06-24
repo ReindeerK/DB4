@@ -41,6 +41,15 @@ state = {
     "pump1_state": None,
     "pump2_state": None,
     "led_state": None,
+    "cool_mode": None,
+    "temp_control_status": None,
+    "temp_control_setpoint": None,
+    "temp_control_predicted": None,
+    "temp_control_filtered": None,
+    "temp_control_rate_c_per_min": None,
+    "temp_control_output": None,
+    "temp_control_feed_forward": None,
+    "temp_control_sample_count": None,
     "feed_mode": None,
     "feed_status": None,
     "feed_target": None,
@@ -67,6 +76,15 @@ TOPIC_TO_KEY = {
     "db4/pump1/state": "pump1_state",
     "db4/pump2/state": "pump2_state",
     "db4/led/state": "led_state",
+    "db4/cool/mode": "cool_mode",
+    "db4/temp/control/status": "temp_control_status",
+    "db4/temp/control/setpoint": "temp_control_setpoint",
+    "db4/temp/control/predicted": "temp_control_predicted",
+    "db4/temp/control/filtered": "temp_control_filtered",
+    "db4/temp/control/rate_c_per_min": "temp_control_rate_c_per_min",
+    "db4/temp/control/output": "temp_control_output",
+    "db4/temp/control/feed_forward": "temp_control_feed_forward",
+    "db4/temp/control/sample_count": "temp_control_sample_count",
     "db4/feed/mode": "feed_mode",
     "db4/feed/status": "feed_status",
     "db4/feed/target": "feed_target",
@@ -95,7 +113,9 @@ def mqtt_pump_command(pump_id, cmd):
 
 
 def dashboard_payload(topic, payload):
-    if topic == "db4/pump1/state":
+    if topic == "db4/pump1/state" and 1 in INVERTED_PUMP_IDS:
+        return invert_on_off(payload)
+    if topic == "db4/pump2/state" and 2 in INVERTED_PUMP_IDS:
         return invert_on_off(payload)
     return payload
 
@@ -168,6 +188,8 @@ def on_connect(client, userdata, flags, rc):
         client.subscribe("db4/pump1/state")
         client.subscribe("db4/pump2/state")
         client.subscribe("db4/led/state")
+        client.subscribe("db4/cool/mode")
+        client.subscribe("db4/temp/control/#")
         client.subscribe("db4/feed/#")
     else:
         print(f"MQTT connection failed with code {rc}")
@@ -279,6 +301,15 @@ def feed_mode(mode):
     if mode not in ("off", "auto", "on"):
         return jsonify({"error": "invalid mode"}), 400
     mqtt_client.publish("db4/feed/mode/set", mode)
+    return jsonify({"ok": True})
+
+
+@app.route("/cool/mode/<mode>", methods=["POST"])
+@requires_auth
+def cool_mode(mode):
+    if mode not in ("off", "auto", "on"):
+        return jsonify({"error": "invalid mode"}), 400
+    mqtt_client.publish("db4/cool/mode/set", mode)
     return jsonify({"ok": True})
 
 
