@@ -61,6 +61,28 @@ TOPIC_TO_KEY = {
     "db4/led/state": "led_state",
 }
 
+INVERTED_PUMP_IDS = {1}
+
+
+def invert_on_off(value):
+    if value == "on":
+        return "off"
+    if value == "off":
+        return "on"
+    return value
+
+
+def mqtt_pump_command(pump_id, cmd):
+    if pump_id in INVERTED_PUMP_IDS:
+        return invert_on_off(cmd)
+    return cmd
+
+
+def dashboard_payload(topic, payload):
+    if topic == "db4/pump1/state":
+        return invert_on_off(payload)
+    return payload
+
 
 def now_iso():
     return datetime.now(timezone.utc).isoformat()
@@ -143,7 +165,7 @@ def on_disconnect(client, userdata, rc):
 
 def on_message(client, userdata, msg):
     topic = msg.topic
-    payload = msg.payload.decode()
+    payload = dashboard_payload(topic, msg.payload.decode())
     key = TOPIC_TO_KEY.get(topic)
     ts = now_iso()
 
@@ -226,7 +248,7 @@ def get_events():
 def pump(pump_id, cmd):
     if pump_id not in (1, 2) or cmd not in ("on", "off"):
         return jsonify({"error": "invalid command"}), 400
-    mqtt_client.publish(f"db4/pump{pump_id}/set", cmd)
+    mqtt_client.publish(f"db4/pump{pump_id}/set", mqtt_pump_command(pump_id, cmd))
     return jsonify({"ok": True})
 
 
