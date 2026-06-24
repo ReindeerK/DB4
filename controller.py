@@ -87,7 +87,6 @@ def measure_temp_mean():
     sample_delay_ms = max(0, int(TEMP_AVERAGE_SAMPLE_DELAY_MS))
 
     for i in range(sample_count):
-        client.check_msg()
         temp = measure_temp()
         if temp is not None:
             readings.append(temp)
@@ -117,11 +116,15 @@ def pump_state(pump):
     return "on" if pump.is_on() else "off"
 
 
+def publish_text(topic, value):
+    client.publish(topic, str(value).encode())
+
+
 def publish_float(topic, value, digits=2):
     if value is None:
         client.publish(topic, b"None")
     else:
-        client.publish(topic, ("{:." + str(digits) + "f}").format(value))
+        publish_text(topic, ("{:." + str(digits) + "f}").format(value))
 
 
 def apply_cooling_output(output_percent, now_ms):
@@ -173,15 +176,15 @@ def update_temperature_control(temp, now_ms):
 
 def publish_temperature_control_state():
     snap = temp_pid.snapshot()
-    client.publish(b"db4/cool/mode", cool_mode)
-    client.publish(b"db4/temp/control/status", snap["status"])
+    publish_text(b"db4/cool/mode", cool_mode)
+    publish_text(b"db4/temp/control/status", snap["status"])
     publish_float(b"db4/temp/control/setpoint", snap["setpoint"], 2)
     publish_float(b"db4/temp/control/predicted", snap["predicted_temp"], 2)
     publish_float(b"db4/temp/control/filtered", snap["filtered_temp"], 2)
     publish_float(b"db4/temp/control/rate_c_per_min", snap["rate_c_per_min"], 4)
     publish_float(b"db4/temp/control/output", cooling_output_percent, 1)
     publish_float(b"db4/temp/control/feed_forward", snap["feed_forward_percent"], 1)
-    client.publish(b"db4/temp/control/sample_count", str(last_temp_sample_count))
+    publish_text(b"db4/temp/control/sample_count", last_temp_sample_count)
 
 
 def apply_feed_mode():
@@ -200,8 +203,8 @@ def feed_status():
 
 
 def publish_feed_control_state():
-    client.publish(b"db4/feed/mode", feed_mode)
-    client.publish(b"db4/feed/status", feed_status())
+    publish_text(b"db4/feed/mode", feed_mode)
+    publish_text(b"db4/feed/status", feed_status())
 
 
 def on_command(topic, msg):
@@ -213,35 +216,31 @@ def on_command(topic, msg):
             feed_mode = "on"
             pump1.on()
             client.publish(b"db4/pump1/state", b"on")
-            publish_feed_control_state()
         elif cmd == "off":
             feed_mode = "off"
             pump1.off()
             client.publish(b"db4/pump1/state", b"off")
-            publish_feed_control_state()
     elif topic == b"db4/feed/mode/set":
         if cmd in ("auto", "on", "off"):
             feed_mode = cmd
             apply_feed_mode()
-            client.publish(b"db4/pump1/state", pump_state(pump1))
-            publish_feed_control_state()
     elif topic == b"db4/pump2/set":
         if cmd == "on":
             cool_mode = "on"
             pump2.on()
             client.publish(b"db4/pump2/state", b"on")
-            client.publish(b"db4/cool/mode", cool_mode)
+            publish_text(b"db4/cool/mode", cool_mode)
         elif cmd == "off":
             cool_mode = "off"
             pump2.off()
             client.publish(b"db4/pump2/state", b"off")
-            client.publish(b"db4/cool/mode", cool_mode)
+            publish_text(b"db4/cool/mode", cool_mode)
     elif topic in (b"db4/cool/mode/set", b"db4/temp/control/mode/set"):
         if cmd in ("auto", "on", "off"):
             cool_mode = cmd
             cooling_window_started_ms = 0
             temp_pid.reset()
-            client.publish(b"db4/cool/mode", cool_mode)
+            publish_text(b"db4/cool/mode", cool_mode)
     elif topic == b"db4/led/set":
         if cmd == "on":
             set_blue_brightness(LED_ON_BRIGHTNESS)
@@ -296,7 +295,7 @@ from pump import Pump
 from temp_pid import TemperaturePID
 from temperature import read_temperature
 from light_sensor import init_sensor, read_sensor
-from rgb_led import set_blue_brightness
+from led_sensor_combined import set_blue_brightness
 
 pump1 = Pump(pin=32, use_pwm=False)
 pump2 = Pump(pin=27, use_pwm=COOLING_PUMP_USE_PWM, freq=COOLING_PWM_FREQ)
@@ -336,11 +335,12 @@ while True:
     now_ms = time.ticks_ms()
     od = measure_od()
     update_temperature_control(temp, now_ms)
-    client.publish(b"db4/temperature", str(temp))
-    client.publish(b"db4/od", str(od))
-    client.publish(b"db4/pump1/state", pump_state(pump1))
-    client.publish(b"db4/pump2/state", pump_state(pump2))
-    client.publish(b"db4/led/state", "on" if led_on else "off")
+    gc.collect()
+    publish_text(b"db4/temperature", temp)
+    publish_text(b"db4/od", od)
+    publish_text(b"db4/pump1/state", pump_state(pump1))
+    publish_text(b"db4/pump2/state", pump_state(pump2))
+    publish_text(b"db4/led/state", "on" if led_on else "off")
     publish_feed_control_state()
     publish_temperature_control_state()
     elapsed_ms = time.ticks_diff(time.ticks_ms(), loop_started_ms)

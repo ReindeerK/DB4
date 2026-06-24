@@ -33,6 +33,7 @@ TEMP_REPORT_INTERVAL_MS = 2000
 TEMP_AVERAGE_SAMPLES = 12
 TEMP_AVERAGE_SAMPLE_DELAY_MS = 120
 TEMP_DEBUG_READINGS = False
+TEMP_OFFSET_C = 0.0
 
 # Feed-forward compensation while the algae feed pump is running.
 TEMP_FEED_TEMP_RISE_C = 0.20

@@ -14,6 +14,7 @@ NUM_SAMPLES = 25
 THERM_B_COEFF = 3950
 ADC_MAX = 1023
 ADC_Vmax = 3.15
+TEMP_OFFSET_C = 0.0
 
 def init_temp_sensor(TENP_SENS_ADC_PIN_NO = 35):
     adc = ADC(Pin(TENP_SENS_ADC_PIN_NO))
@@ -41,7 +42,7 @@ def read_temp(temp_sens):
     steinhart  = log(resistance / NOM_RES) / THERM_B_COEFF
     steinhart += 1.0 / (TEMP_NOM + 273.15)
     steinhart  = (1.0 / steinhart) - 273.15
-    return steinhart
+    return steinhart + TEMP_OFFSET_C
 
 print("I'm alive!\n")
 utime.sleep_ms(2000)
