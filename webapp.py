@@ -26,7 +26,7 @@ DASHBOARD_PASSWORD = os.environ.get("DASHBOARD_PASSWORD")
 HISTORY_LIMIT = int(os.environ.get("HISTORY_LIMIT", "720"))
 EVENT_LIMIT = int(os.environ.get("EVENT_LIMIT", "160"))
 CELL_OD_FULL_SCALE = float(os.environ.get("CELL_OD_FULL_SCALE", "65000"))
-CELL_MAX = float(os.environ.get("CELL_MAX", "4.5"))
+CELL_MAX = float(os.environ.get("CELL_MAX", "5000"))
 
 app = Flask(__name__)
 started_at = time.time()
@@ -41,6 +41,14 @@ state = {
     "pump1_state": None,
     "pump2_state": None,
     "led_state": None,
+    "feed_mode": None,
+    "feed_status": None,
+    "feed_target": None,
+    "feed_low": None,
+    "feed_high": None,
+    "feed_dose_ml": None,
+    "feed_pump_seconds": None,
+    "feed_concentration": None,
     "mqtt_connected": False,
     "last_seen": None,
 }
@@ -59,9 +67,17 @@ TOPIC_TO_KEY = {
     "db4/pump1/state": "pump1_state",
     "db4/pump2/state": "pump2_state",
     "db4/led/state": "led_state",
+    "db4/feed/mode": "feed_mode",
+    "db4/feed/status": "feed_status",
+    "db4/feed/target": "feed_target",
+    "db4/feed/low": "feed_low",
+    "db4/feed/high": "feed_high",
+    "db4/feed/dose_ml": "feed_dose_ml",
+    "db4/feed/pump_seconds": "feed_pump_seconds",
+    "db4/feed/concentration": "feed_concentration",
 }
 
-INVERTED_PUMP_IDS = {1}
+INVERTED_PUMP_IDS = set()
 
 
 def invert_on_off(value):
@@ -152,6 +168,7 @@ def on_connect(client, userdata, flags, rc):
         client.subscribe("db4/pump1/state")
         client.subscribe("db4/pump2/state")
         client.subscribe("db4/led/state")
+        client.subscribe("db4/feed/#")
     else:
         print(f"MQTT connection failed with code {rc}")
 
@@ -179,13 +196,17 @@ def on_message(client, userdata, msg):
 
         if key == "od":
             derived_cell = derived_cell_from_od(payload)
-            if derived_cell is not None and state.get("cell_source") != "mqtt":
+            if derived_cell is not None and state.get("cell_source") not in ("mqtt", "feed"):
                 state["cell"] = f"{derived_cell:.3f}"
                 state["cell_source"] = "derived"
                 add_history("cell", derived_cell, ts)
         elif key == "cell":
             state["cell"] = payload
             state["cell_source"] = "mqtt"
+        elif key == "feed_concentration":
+            state["cell"] = payload
+            state["cell_source"] = "feed"
+            add_history("cell", payload, ts)
 
         add_event(topic, payload, ts)
 
@@ -249,6 +270,15 @@ def pump(pump_id, cmd):
     if pump_id not in (1, 2) or cmd not in ("on", "off"):
         return jsonify({"error": "invalid command"}), 400
     mqtt_client.publish(f"db4/pump{pump_id}/set", mqtt_pump_command(pump_id, cmd))
+    return jsonify({"ok": True})
+
+
+@app.route("/feed/mode/<mode>", methods=["POST"])
+@requires_auth
+def feed_mode(mode):
+    if mode not in ("off", "auto", "on"):
+        return jsonify({"error": "invalid mode"}), 400
+    mqtt_client.publish("db4/feed/mode/set", mode)
     return jsonify({"ok": True})
 
 

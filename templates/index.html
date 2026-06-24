@@ -91,12 +91,12 @@
       <div style="flex:1; background:var(--panel); border:1px solid var(--line2); display:flex; flex-direction:column; min-height:0;">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 15px; border-bottom:1px solid var(--line); font-family:'JetBrains Mono',monospace; font-weight:600; font-size:11px; letter-spacing:.1em; color:var(--dim); text-transform:uppercase;">
           <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><span style="color:var(--accent);">AD&middot;04</span>&nbsp;&nbsp;Algae Density &middot; Mussel Tank &middot; 60s</span>
-          <span style="flex:none; white-space:nowrap; color:var(--accent);"><span id="cell-graph-val">--</span> &times;10&#8312;</span>
+          <span style="flex:none; white-space:nowrap; color:var(--accent);"><span id="cell-graph-val">--</span> cells/mL</span>
         </div>
         <div style="position:relative; flex:1; min-height:150px; overflow:hidden;">
           <canvas id="cell-canvas" width="820" height="200" style="width:100%; height:100%; display:block;"></canvas>
           <div style="position:absolute; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, var(--accent), transparent); opacity:.18; animation:scan 5s linear infinite; animation-delay:1.5s;"></div>
-          <div style="position:absolute; top:8px; left:12px; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--dim);">4.5</div>
+          <div style="position:absolute; top:8px; left:12px; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--dim);">5000</div>
           <div style="position:absolute; bottom:8px; left:12px; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--dim);">0.0</div>
         </div>
       </div>
@@ -127,13 +127,18 @@
           <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--dim);">ALGAE DENSITY &middot; MUSSEL TANK</div>
           <div style="display:flex; align-items:flex-end; gap:10px; margin-top:16px;">
             <div id="cell-value" style="font-weight:700; font-size:52px; line-height:.82; color:var(--text);">--</div>
-            <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--dim); padding-bottom:7px; letter-spacing:.06em;">&times;10&#8312; cells/mL</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--dim); padding-bottom:7px; letter-spacing:.06em;">cells/mL</div>
           </div>
           <div style="margin-top:20px; height:8px; background:var(--inset); border:1px solid var(--line2); position:relative; overflow:hidden;">
             <div data-fx="cellbar" style="position:absolute; left:0; top:0; bottom:0; width:0%; background:linear-gradient(90deg, var(--accent2), var(--accent)); box-shadow:0 0 10px var(--accent); transition:width .6s ease;"></div>
           </div>
-          <div style="display:flex; justify-content:space-between; margin-top:8px; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--dim);"><span>0.0</span><span>4.5 SATURATION</span></div>
-          <div style="margin-top:18px; font-family:'JetBrains Mono',monospace; font-size:9px; line-height:1.6; color:var(--dim); letter-spacing:.04em;">Algae delivered by feed pump &middot; cleared by mussel filtration</div>
+          <div style="display:flex; justify-content:space-between; margin-top:8px; font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--dim);"><span>0</span><span id="cell-scale-label">5000</span></div>
+          <div style="margin-top:18px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; font-family:'JetBrains Mono',monospace; font-size:9px; line-height:1.5; color:var(--dim); letter-spacing:.04em;">
+            <div style="border-top:1px solid var(--line); padding-top:8px;">TARGET <span id="feed-target" style="color:var(--accent);">--</span></div>
+            <div style="border-top:1px solid var(--line); padding-top:8px;">BAND <span id="feed-band" style="color:var(--text);">--</span></div>
+            <div style="border-top:1px solid var(--line); padding-top:8px;">STATUS <span id="feed-status" style="color:var(--dim);">--</span></div>
+            <div style="border-top:1px solid var(--line); padding-top:8px;">DOSE <span id="feed-dose" style="color:var(--text);">--</span></div>
+          </div>
         </div>
       </div>
     </section>
@@ -221,7 +226,7 @@
   const TEMP_MIN     = 14, TEMP_MAX = 21;   // thermometer + temp graph domain (°C)
   const OPT_LO       = 17, OPT_HI   = 18;   // optimal band for STATUS derivation
   const OD_MAX       = 65000;       // raw-count full-scale for the OD bar (tune to sensor)
-  const CELL_MIN     = 0, CELL_MAX  = 4.5;  // algae-density graph/bar domain (×10⁸ cells/mL)
+  const CELL_MIN     = 0, CELL_MAX  = 5000; // algae-density graph/bar domain (cells/mL)
   const HIST_LEN     = 90;          // ~60s of history at the 700ms poll cadence
   const POLL_MS      = 1000;
   const LOG_LIMIT    = 12;
@@ -233,8 +238,8 @@
   const root = document.getElementById('root');
   const $ = id => document.getElementById(id);
 
-  // pump UI mode: 'off' | 'auto' | 'on'. Initialised from the first real /status,
-  // then driven by the operator. 'auto' is a UI-only placeholder (see IMPLEMENT.md).
+  // pump UI mode: 'off' | 'auto' | 'on'. Feed AUTO is backed by the ESP32
+  // closed-loop controller; coolant AUTO remains a visual/manual placeholder.
   const mode = { feed: null, cool: null };
   // last seen real pump states, so an AUTO re-render can reflect actual hardware status
   const lastState = { pump1: 'off', pump2: 'off' };
@@ -421,6 +426,25 @@
     }
   }
 
+  function fmtCell(value, digits) {
+    const n = parseFloat(value);
+    return Number.isFinite(n) ? n.toFixed(digits) : '--';
+  }
+
+  function renderFeedModel(data) {
+    const target = fmtCell(data.feed_target, 0);
+    const low = fmtCell(data.feed_low, 0);
+    const high = fmtCell(data.feed_high, 0);
+    const dose = fmtCell(data.feed_dose_ml, 2);
+    const pumpSeconds = fmtCell(data.feed_pump_seconds, 0);
+    $('feed-target').textContent = target;
+    $('feed-band').textContent = low === '--' || high === '--' ? '--' : low + '-' + high;
+    $('feed-status').textContent = data.feed_status || '--';
+    $('feed-status').style.color = data.feed_status === 'DOSING' ? 'var(--accent)'
+      : (data.feed_status === 'HIGH_HOLD' || data.feed_status === 'NO_OD' ? 'var(--warn)' : 'var(--dim)');
+    $('feed-dose').textContent = dose === '--' ? '--' : dose + ' mL / ' + pumpSeconds + 's';
+  }
+
   // ---------- backend wiring ----------
   async function refresh() {
     let data;
@@ -436,6 +460,7 @@
     const temp = parseFloat(data.temperature);
     const od = parseFloat(data.od);
     const cell = data.cell != null ? parseFloat(data.cell) : NaN;
+    const feedVisualState = ['DOSING', 'FORCED_ON'].includes(data.feed_status) ? 'on' : 'off';
     if (Number.isFinite(data.uptime_seconds)) {
       serverUptime = data.uptime_seconds;
       serverUptimeSeenAt = Date.now();
@@ -444,6 +469,7 @@
       $('brand-name').textContent = data.app_name;
       document.title = data.app_name;
     }
+    $('cell-scale-label').textContent = CELL_MAX.toFixed(0);
 
     // temperature readout + status
     $('temp-value').textContent = Number.isFinite(temp) ? temp.toFixed(1) : '--';
@@ -461,18 +487,19 @@
     // OD readout (raw counts; needs the LED source to be on to be meaningful)
     const ledOn = data.led_state === 'on';
     $('od-value').textContent = (ledOn && Number.isFinite(od)) ? String(od) : '—';
-    const odStatus = !ledOn ? 'SENSOR OFFLINE' : (data.pump1_state === 'on' ? 'FEEDING ACTIVE' : 'NO FLOW');
+    const odStatus = !ledOn ? 'SENSOR OFFLINE' : (feedVisualState === 'on' ? 'FEEDING ACTIVE' : 'NO FLOW');
     $('od-status').textContent = odStatus;
-    $('od-status').style.color = !ledOn ? 'var(--warn)' : (data.pump1_state === 'on' ? 'var(--accent)' : 'var(--dim)');
+    $('od-status').style.color = !ledOn ? 'var(--warn)' : (feedVisualState === 'on' ? 'var(--accent)' : 'var(--dim)');
 
     // algae density readout; backend derives a smooth proxy from OD unless db4/cell is published
     $('cell-value').textContent = Number.isFinite(cell) ? cell.toFixed(1) : '—';
     $('cell-graph-val').textContent = Number.isFinite(cell) ? cell.toFixed(1) : '—';
 
     // initialise pump UI modes from the first real reading; remember states for AUTO re-render
-    if (mode.feed === null) mode.feed = data.pump1_state === 'on' ? 'on' : 'off';
+    if (['off', 'auto', 'on'].includes(data.feed_mode)) mode.feed = data.feed_mode;
+    else if (mode.feed === null) mode.feed = data.pump1_state === 'on' ? 'on' : 'off';
     if (mode.cool === null) mode.cool = data.pump2_state === 'on' ? 'on' : 'off';
-    lastState.pump1 = data.pump1_state;
+    lastState.pump1 = feedVisualState;
     lastState.pump2 = data.pump2_state;
 
     // history for the graphs
@@ -480,7 +507,8 @@
     if (Number.isFinite(cell)) { cellHist.push(cell); while (cellHist.length > HIST_LEN) cellHist.shift(); }
 
     renderLed(ledOn);
-    renderPump('feed', data.pump1_state);
+    renderFeedModel(data);
+    renderPump('feed', feedVisualState);
     renderPump('cool', data.pump2_state);
     syncMeters(temp, od, cell);
     drawGraphs();
@@ -509,6 +537,11 @@
     refresh();
   }
 
+  async function postFeedMode(modeName) {
+    await fetch('/feed/mode/' + modeName, { method: 'POST' });
+    refresh();
+  }
+
   document.querySelector('[data-toggle="led"]').addEventListener('click', async () => {
     const on = root.querySelector('[data-ctl="led"][data-role="status"]').textContent === 'ONLINE';
     await fetch('/led/' + (on ? 'off' : 'on'), { method: 'POST' });
@@ -519,11 +552,15 @@
     btn.addEventListener('click', () => {
       const [key, seg] = btn.dataset.segBtn.split(':');
       mode[key] = seg;
-      if (seg === 'on') postPump(key, 'on');
-      else if (seg === 'off') postPump(key, 'off');
-      // 'auto' has no backend control loop yet — UI-only (see IMPLEMENT.md).
-      // Re-render immediately so the selected segment highlights without waiting for the poll.
-      else renderPump(key, key === 'feed' ? lastState.pump1 : lastState.pump2);
+      if (key === 'feed') {
+        postFeedMode(seg);
+      } else if (seg === 'on') {
+        postPump(key, 'on');
+      } else if (seg === 'off') {
+        postPump(key, 'off');
+      } else {
+        renderPump(key, lastState.pump2);
+      }
     });
   });
 
