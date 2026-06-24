@@ -120,29 +120,48 @@ ALGAE_GROWTH_RATE_H = 0.035
 # Most simple driver wiring is active-high, so False is the normal value.
 FEED_PUMP_ACTIVE_LOW = False
 
-# MEASURE:
+# MEASURE / PRODUCT DATASHEET STARTING POINT:
 # Feed pump flow rate at the actual voltage, tubing, and height difference.
 # Unit: mL/min.
 #
+# Your current pump is the DFRobot FIT0800 amphibious/submersible pump.
+# The vendor lists:
+# - voltage: 3-6 V
+# - flow: 80-100 L/h
+# - lift/head: 25-45 cm
+# - power: 0.4-2 W
+#
+# 80-100 L/h is about 1330-1670 mL/min at ideal/free-flow conditions.
+# At 5 V, 1500 mL/min is a reasonable FIRST ESTIMATE, but it is not a final
+# calibration value. Real flow can change a lot with tube diameter, vertical
+# lift, restrictions, algae viscosity, and water level.
+#
 # Measure this gravimetrically:
-# 1. Run the feed pump for a known time, e.g. 60 s.
+# 1. Run the feed pump for a short known time, e.g. 5-10 s.
 # 2. Collect the pumped water.
 # 3. Weigh it in grams. For water, grams ~= mL.
 # 4. flow = collected_mL / minutes.
 #
-# The current 0.8 mL/min is an assumed/example value. Change it before AUTO.
-FEED_PUMP_FLOW_ML_MIN = 0.8
+# Important: this pump is much faster than a peristaltic dosing pump. If your
+# calculated algae doses are only a few mL, pump pulses will be very short and
+# less precise. For fine dosing, use diluted algae stock, a lower-flow pump, a
+# restriction valve, PWM, or a peristaltic pump.
+FEED_PUMP_FLOW_ML_MIN = 1500.0
 
 # SAFETY:
-# Minimum pump pulse. Very short pulses may not move liquid reliably.
-MIN_FEED_PUMP_SECONDS = 2
+# Minimum pump pulse.
+#
+# With this pump, 0.10 s at 1500 mL/min is already about 2.5 mL. If the pump
+# does not start reliably at 0.10 s, increase this value and/or dilute the
+# algae stock so each dose can be physically larger.
+MIN_FEED_PUMP_SECONDS = 0.10
 
 # SAFETY:
 # Maximum single dose duration. This prevents a bad sensor reading from
 # running the pump for a very long time.
 #
-# With FEED_PUMP_FLOW_ML_MIN = 0.8, 300 s means at most about 4 mL per dose.
-MAX_FEED_PUMP_SECONDS = 300
+# With FEED_PUMP_FLOW_ML_MIN = 1500, 2 s means at most about 50 mL per dose.
+MAX_FEED_PUMP_SECONDS = 2.0
 
 # SAFETY:
 # Minimum wait after starting one dose before another new dose may begin.
@@ -153,7 +172,15 @@ FEED_DOSE_COOLDOWN_SECONDS = 30
 # If the controller has not received a usable OD-derived concentration within
 # this time, AUTO refuses to dose and reports NO_OD.
 # Unit: seconds.
-FEED_SENSOR_STALE_SECONDS = 60000
+FEED_SENSOR_STALE_SECONDS = 120
+
+# SOFTWARE TIMING:
+# Delay between full sensor/control cycles.
+#
+# The controller has special handling for short feed pulses, so the pump can
+# turn off before this delay finishes. The OD sensor itself still takes time to
+# average samples, so concentration feedback is not instantaneous.
+CONTROL_LOOP_DELAY_SECONDS = 2
 
 # ---------------------------------------------------------------------------
 # OD sensor calibration

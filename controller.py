@@ -19,6 +19,7 @@ from algae_controller import AlgaeFeedingController
 LED_ON_BRIGHTNESS = 255
 WIFI_CONNECT_TIMEOUT_SECONDS = 15
 WIFI_RETRY_DELAY_SECONDS = 5
+CONTROL_LOOP_DELAY_SECONDS = 2
 
 client = MQTTClient(
     b"esp32_db4",
@@ -80,6 +81,26 @@ def publish_feed_telemetry(concentration):
     if concentration is not None:
         client.publish(b"db4/feed/concentration", str(concentration))
         client.publish(b"db4/cell", str(concentration))
+
+
+def finish_short_feed_pulse(started, loop_delay_s):
+    """Turn off short pump pulses without waiting for the next OD cycle."""
+    if not started or feed_controller.pump_until_s is None:
+        time.sleep(loop_delay_s)
+        return
+
+    remaining_s = feed_controller.pump_until_s - time.time()
+    if remaining_s >= loop_delay_s:
+        time.sleep(loop_delay_s)
+        return
+
+    if remaining_s > 0:
+        time.sleep(remaining_s)
+    set_feed_pump(False)
+
+    rest_s = loop_delay_s - max(remaining_s, 0)
+    if rest_s > 0:
+        time.sleep(rest_s)
 
 
 def on_command(topic, msg):
@@ -216,4 +237,7 @@ while True:
     client.publish(b"db4/pump1/state", "on" if last_feed_pump_on else "off")
     client.publish(b"db4/pump2/state", "on" if pump2.digital.value() else "off")
     client.publish(b"db4/led/state", "on" if led_on else "off")
-    time.sleep(2)
+    finish_short_feed_pulse(
+        desired_feed_pump,
+        cfg("CONTROL_LOOP_DELAY_SECONDS", CONTROL_LOOP_DELAY_SECONDS),
+    )
